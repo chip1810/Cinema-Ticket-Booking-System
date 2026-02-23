@@ -52,3 +52,10 @@ temp/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Extra - không cần push
+README_GUIDE.md
+*.Postman_Collection.json
+Cinema_API_Postman_Collection.json
+test_failures.log
+setup_db.ts
