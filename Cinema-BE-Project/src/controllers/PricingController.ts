@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { PricingService } from "../services/PricingService";
 import { AppDataSource } from "../data-source";
-import { Showtime } from "../entities/Showtime";
+import { Showtime } from "../modules/showtime/models/Showtime";
 
 const pricingService = new PricingService();
 

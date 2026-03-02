@@ -7,14 +7,14 @@ import { AppDataSource } from "./data-source";
 
 // Controllers
 import { AuthController } from "./modules/auth/controllers/AuthController";
-import { MovieController } from "./controllers/MovieController";
+import { MovieController } from "./modules/movie/controllers/MovieController";
 import { ShowtimeController } from "./controllers/ShowtimeController";
 import { ConcessionController } from "./controllers/ConcessionController";
 import { PricingController } from "./controllers/PricingController";
 
 // Seed entities
-import { Hall } from "./entities/Hall";
-import { Genre } from "./entities/Genre";
+import { Hall } from "./modules/hall/models/Hall";
+import { Genre } from "./modules/genre/models/Genre";
 
 dotenv.config();
 

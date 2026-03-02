@@ -1,7 +1,7 @@
 import { AppDataSource } from "../data-source";
-import { Showtime } from "../entities/Showtime";
-import { Movie } from "../entities/Movie";
-import { Hall } from "../entities/Hall";
+import { Showtime } from "../modules/showtime/models/Showtime";
+import { Movie } from "../modules/movie/models/Movie";
+import { Hall } from "../modules/hall/models/Hall";
 import { CreateShowtimeDTO } from "../dtos/CreateShowtime.dto";
 
 // Cleaning buffer between showtimes (in ms)

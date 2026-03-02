@@ -1,10 +1,10 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToMany,
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToMany,
 } from "typeorm";
-import { Movie } from "./Movie";
+import { Movie } from "../../movie/models/Movie";
 
 @Entity("genres")
 export class Genre {
@@ -17,6 +17,6 @@ export class Genre {
   @Column({ type: "text", nullable: true })
   description?: string;
 
-  @ManyToMany(() => Movie, (movie) => movie.genres)
-  movies!: Movie[];
+    @ManyToMany(() => Movie, (movie) => movie.genres)
+    movies!: Movie[];
 }
