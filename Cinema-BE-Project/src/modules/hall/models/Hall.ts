@@ -3,6 +3,7 @@ import {
     PrimaryGeneratedColumn,
     Column,
     OneToMany,
+    Generated
 } from "typeorm";
 import { Showtime } from "../../showtime/models/Showtime";
 
@@ -11,8 +12,12 @@ export class Hall {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ unique: true })
-  name!: string;
+    @Column({ type: "uuid", unique: true })
+    @Generated("uuid")
+    UUID!: string;
+
+    @Column({ unique: true })
+    name!: string;
 
     @Column("int")
     capacity!: number;

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, Generated } from "typeorm";
 
 export enum ConcessionType {
   FOOD = "Food",
@@ -11,6 +11,9 @@ export class Concession {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ type: "uuid", unique: true })
+  @Generated("uuid")
+  UUID!: string;
   @Column()
   name!: string;
 
