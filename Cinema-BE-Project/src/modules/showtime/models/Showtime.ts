@@ -8,10 +8,16 @@ import {
 import { Movie } from "../../movie/models/Movie";
 import { Hall } from "../../hall/models/Hall";
 
+import { Generated } from "typeorm";
+
 @Entity("showtimes")
 export class Showtime {
-    @PrimaryGeneratedColumn("uuid")
-    id!: string;
+    @PrimaryGeneratedColumn()
+    id!: number;
+
+    @Column({ type: "uuid", unique: true })
+    @Generated("uuid")
+    UUID!: string;
 
     @Column({ type: "timestamp" })
     startTime!: Date;
