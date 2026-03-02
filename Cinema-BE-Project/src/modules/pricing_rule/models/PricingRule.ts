@@ -6,7 +6,7 @@ import {
   Unique,
 } from "typeorm";
 import { Showtime } from "../../showtime/models/Showtime";
-import { SeatType } from "../../seat/models/Seat";
+import { SeatType } from "../../seat/models/enums/SeatType";
 
 @Entity("pricing_rules")
 @Unique(["showtime", "seatType"])

@@ -56,7 +56,7 @@ export class ShowtimeService {
         return this.showtimeRepo.find({ relations: ["movie", "hall"] });
     }
 
-    async deleteShowtime(id: string) {
+    async deleteShowtime(id: number) {
         const showtime = await this.showtimeRepo.findOneBy({ id });
         if (!showtime) throw new Error("Showtime not found");
         return this.showtimeRepo.remove(showtime);

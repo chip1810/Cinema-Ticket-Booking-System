@@ -8,6 +8,9 @@ import { Genre } from "./modules/genre/models/Genre";
 import { Showtime } from "./modules/showtime/models/Showtime";
 import { Hall } from "./modules/hall/models/Hall";
 import { Concession } from "./modules/concession/models/Concession";
+import { Seat } from "./modules/seat/models/Seat";
+import { SeatHold } from "./modules/seat/models/SeatHold";
+import { PricingRule } from "./modules/pricing_rule/models/PricingRule";
 
 dotenv.config();
 
@@ -17,7 +20,7 @@ export const AppDataSource = new DataSource({
     ssl: {
         rejectUnauthorized: false,
     },
-    synchronize: false,
+    synchronize: true,
     logging: true,
-    entities: [User, Movie, Genre, Showtime, Hall, Concession],
+    entities: [User, Movie, Genre, Showtime, Hall, Concession,Seat,SeatHold,PricingRule],
 });
