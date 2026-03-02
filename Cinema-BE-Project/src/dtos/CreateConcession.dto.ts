@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString, IsNumber, IsEnum, IsOptional, IsUrl, Min } from "class-validator";
 import { Type } from "class-transformer";
-import { ConcessionType } from "../entities/Concession";
+import { ConcessionType } from "../modules/concession/models/Concession";
 
 export class CreateConcessionDTO {
     @IsNotEmpty()

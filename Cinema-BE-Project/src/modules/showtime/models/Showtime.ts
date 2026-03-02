@@ -1,0 +1,31 @@
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    JoinColumn,
+} from "typeorm";
+import { Movie } from "../../movie/models/Movie";
+import { Hall } from "../../hall/models/Hall";
+
+@Entity("showtimes")
+export class Showtime {
+    @PrimaryGeneratedColumn("uuid")
+    id!: string;
+
+    @Column({ type: "timestamp" })
+    startTime!: Date;
+
+    @Column({ type: "timestamp" })
+    endTime!: Date;
+
+    @ManyToOne(() => Movie, (movie) => movie.showtimes, {
+        onDelete: "CASCADE",
+    })
+    @JoinColumn({ name: "movie_id" })
+    movie!: Movie;
+
+    @ManyToOne(() => Hall, (hall) => hall.showtimes)
+    @JoinColumn({ name: "hall_id" })
+    hall!: Hall;
+}

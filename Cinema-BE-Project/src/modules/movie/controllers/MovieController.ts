@@ -3,7 +3,7 @@ import { MovieService } from "../services/MovieService";
 import { CreateMovieDTO } from "../dtos/CreateMovie.dto";
 import { validate } from "class-validator";
 import { plainToClass } from "class-transformer";
-import { ApiResponse } from "../utils/ApiResponse";
+import { ApiResponse } from "../../../utils/ApiResponse";
 
 const movieService = new MovieService();
 
@@ -40,7 +40,7 @@ export class MovieController {
 
     async getById(req: Request, res: Response) {
         try {
-            const movie = await movieService.getMovieById(String(req.params.id));
+            const movie = await movieService.getMovieById(Number(req.params.id));
 
             return ApiResponse.success(res, movie, "Movie fetched successfully");
 
@@ -52,7 +52,7 @@ export class MovieController {
     async update(req: Request, res: Response) {
         try {
             const movie = await movieService.updateMovie(
-                String(req.params.id),
+                Number(req.params.id),
                 req.body
             );
 
@@ -65,7 +65,7 @@ export class MovieController {
 
     async delete(req: Request, res: Response) {
         try {
-            await movieService.deleteMovie(String(req.params.id));
+            await movieService.deleteMovie(Number(req.params.id));
 
             return ApiResponse.success(res, null, "Movie deleted successfully", 200);
 

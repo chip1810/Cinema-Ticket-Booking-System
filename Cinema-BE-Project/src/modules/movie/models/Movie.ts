@@ -5,9 +5,10 @@ import {
   ManyToMany,
   JoinTable,
   OneToMany,
+  Generated,
 } from "typeorm";
-import { Genre } from "./Genre";
-import { Showtime } from "./Showtime";
+import { Genre } from "../../genre/models/Genre";
+import { Showtime } from "../../showtime/models/Showtime";
 
 export enum MovieStatus {
   NOW_SHOWING = "Now Showing",
@@ -16,8 +17,12 @@ export enum MovieStatus {
 
 @Entity("movies")
 export class Movie {
-  @PrimaryGeneratedColumn("uuid")
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number;
+
+  @Column({ type: "uuid", unique: true })
+  @Generated("uuid")
+  UUID!: string;
 
   @Column()
   title!: string;

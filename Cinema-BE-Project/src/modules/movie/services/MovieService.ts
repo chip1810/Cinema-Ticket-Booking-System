@@ -1,6 +1,6 @@
-import { AppDataSource } from "../data-source";
-import { Movie } from "../entities/Movie";
-import { Genre } from "../entities/Genre";
+import { AppDataSource } from "../../../data-source";
+import { Movie } from "../models/Movie";
+import { Genre } from "../../genre/models/Genre";
 import { CreateMovieDTO } from "../dtos/CreateMovie.dto";
 import { In } from "typeorm";
 
@@ -32,13 +32,13 @@ export class MovieService {
         return this.movieRepo.find({ relations: ["genres"] });
     }
 
-    async getMovieById(id: string) {
+    async getMovieById(id: number) {
         const movie = await this.movieRepo.findOne({ where: { id }, relations: ["genres"] });
         if (!movie) throw new Error("Movie not found");
         return movie;
     }
 
-    async updateMovie(id: string, data: Partial<CreateMovieDTO>) {
+    async updateMovie(id: number, data: Partial<CreateMovieDTO>) {
         const movie = await this.getMovieById(id);
         if (data.genreIds) movie.genres = await this.findGenres(data.genreIds);
         Object.assign(movie, {
@@ -52,7 +52,7 @@ export class MovieService {
         return this.movieRepo.save(movie);
     }
 
-    async deleteMovie(id: string) {
+    async deleteMovie(id: number) {
         const movie = await this.getMovieById(id);
         return this.movieRepo.remove(movie);
     }
