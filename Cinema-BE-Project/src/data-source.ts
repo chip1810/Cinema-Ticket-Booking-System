@@ -17,7 +17,7 @@ export const AppDataSource = new DataSource({
     ssl: {
         rejectUnauthorized: false,
     },
-    synchronize: true,
+    synchronize: false,
     logging: true,
     entities: [User, Movie, Genre, Showtime, Hall, Concession],
 });
