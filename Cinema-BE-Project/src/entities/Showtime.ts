@@ -1,21 +1,31 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
 import { Movie } from "./Movie";
 import { Hall } from "./Hall";
 
 @Entity("showtimes")
 export class Showtime {
-    @PrimaryGeneratedColumn("uuid")
-    id!: string;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
-    @Column()
-    startTime!: Date;
+  @Column({ type: "timestamp" })
+  startTime!: Date;
 
-    @Column()
-    endTime!: Date; // Movie end time (Cleaning buffer handled in service logic)
+  @Column({ type: "timestamp" })
+  endTime!: Date;
 
-    @ManyToOne(() => Movie, (movie) => movie.showtimes, { eager: true })
-    movie!: Movie;
+  @ManyToOne(() => Movie, (movie) => movie.showtimes, {
+    onDelete: "CASCADE",
+  })
+  @JoinColumn({ name: "movie_id" })
+  movie!: Movie;
 
-    @ManyToOne(() => Hall, (hall) => hall.showtimes, { eager: false })
-    hall!: Hall;
+  @ManyToOne(() => Hall, (hall) => hall.showtimes)
+  @JoinColumn({ name: "hall_id" })
+  hall!: Hall;
 }

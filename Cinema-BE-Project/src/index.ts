@@ -6,7 +6,7 @@ import * as dotenv from "dotenv";
 import { AppDataSource } from "./data-source";
 
 // Controllers
-import { AuthController } from "./controllers/AuthController";
+import { AuthController } from "./modules/auth/controllers/AuthController";
 import { MovieController } from "./controllers/MovieController";
 import { ShowtimeController } from "./controllers/ShowtimeController";
 import { ConcessionController } from "./controllers/ConcessionController";

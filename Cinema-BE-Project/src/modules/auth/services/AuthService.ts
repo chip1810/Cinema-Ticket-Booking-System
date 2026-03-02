@@ -1,5 +1,5 @@
-import { AppDataSource } from "../data-source";
-import { User } from "../entities/User";
+import { AppDataSource } from "../../../data-source";
+import { User } from "../models/User";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { RegisterDTO, LoginDTO, ResetPasswordDTO } from "../dtos/Auth.dto";
