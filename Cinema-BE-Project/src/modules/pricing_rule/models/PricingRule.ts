@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   Unique,
+  JoinColumn,
 } from "typeorm";
 import { Showtime } from "../../showtime/models/Showtime";
 import { SeatType } from "../../seat/models/enums/SeatType";
@@ -14,7 +15,11 @@ export class PricingRule {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column()
+  showtimeId!: number;
+
   @ManyToOne(() => Showtime, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "showtimeId" })
   showtime!: Showtime;
 
   @Column({

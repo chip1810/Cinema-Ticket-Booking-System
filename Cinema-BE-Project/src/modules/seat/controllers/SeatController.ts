@@ -47,6 +47,7 @@ export class SeatController {
 
     // ✅ CONFIRM BOOKING
     async confirmBooking(req: AuthRequest, res: Response) {
+
         const dto = plainToInstance(ConfirmBookingDTO, req.body);
         const errors = await validate(dto);
 
@@ -65,6 +66,7 @@ export class SeatController {
             const result = await seatService.confirmBooking(
                 dto.showtimeUUID,
                 dto.seatUUIDs,
+                dto.concessions || [],
                 req.user.id
             );
 
@@ -75,23 +77,23 @@ export class SeatController {
         }
     }
 
-  async getSeatsByHallId(req: Request, res: Response) {
-    try {
-      const hallId = Number(req.params.hallId);
+    async getSeatsByHallId(req: Request, res: Response) {
+        try {
+            const hallId = Number(req.params.hallId);
 
-      if (isNaN(hallId)) {
-        return ApiResponse.error(res, "Invalid hallId", 400);
-      }
+            if (isNaN(hallId)) {
+                return ApiResponse.error(res, "Invalid hallId", 400);
+            }
 
-      const seats = await seatService.getSeatsByHallId(hallId);
+            const seats = await seatService.getSeatsByHallId(hallId);
 
-      return ApiResponse.success(res, seats, "Seats fetched successfully");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Internal Server Error";
+            return ApiResponse.success(res, seats, "Seats fetched successfully");
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : "Internal Server Error";
 
-      return ApiResponse.error(res, message, 500);
+            return ApiResponse.error(res, message, 500);
+        }
     }
-  }
 
 }

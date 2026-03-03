@@ -6,6 +6,7 @@ import {
     CreateDateColumn,
     Unique,
     Generated,
+    JoinColumn
 } from "typeorm";
 import { Showtime } from "../../showtime/models/Showtime";
 import { Seat } from "../../seat/models/Seat";
@@ -13,7 +14,7 @@ import { User } from "../../auth/models/User";
 import { Order } from "../../order/models/Order";
 
 @Entity("tickets")
-@Unique(["showtime", "seat"])
+@Unique(["showtimeId", "seatId"])
 export class Ticket {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -29,17 +30,18 @@ export class Ticket {
     seatId!: number;       // 👈 thêm cái này
 
     @ManyToOne(() => Showtime)
+    @JoinColumn({ name: "showtimeId" })
     showtime!: Showtime;
 
     @ManyToOne(() => Seat)
+    @JoinColumn({ name: "seatId" })
     seat!: Seat;
-
     @ManyToOne(() => Order, (order) => order.tickets, { onDelete: "CASCADE" })
     order!: Order;
 
     @Column("decimal", { precision: 10, scale: 2 })
     price!: number;
 
-    @CreateDateColumn()
+    @CreateDateColumn({ type: "timestamptz" })
     createdAt!: Date;
 }

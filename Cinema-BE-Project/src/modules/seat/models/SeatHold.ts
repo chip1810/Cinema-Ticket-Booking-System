@@ -24,6 +24,9 @@ export class SeatHold {
     @Column()
     seatId!: number;
 
+     @Column()
+    userId!: number;
+
     @ManyToOne(() => Showtime, { onDelete: "CASCADE" })
     @JoinColumn({ name: "showtimeId" })
     showtime!: Showtime;
@@ -33,6 +36,7 @@ export class SeatHold {
     seat!: Seat;
 
     @ManyToOne(() => User, { nullable: true })
+    @JoinColumn({ name: "userId" })
     user!: User;
 
     @Column({ type: "timestamptz" })
