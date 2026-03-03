@@ -19,11 +19,14 @@ export class Showtime {
     @Generated("uuid")
     UUID!: string;
 
-    @Column({ type: "timestamp" })
+    @Column({ type: "timestamptz" })
     startTime!: Date;
 
-    @Column({ type: "timestamp" })
+    @Column({ type: "timestamptz" })
     endTime!: Date;
+
+    @Column({ name: "hall_id" })
+    hallId!: number;
 
     @ManyToOne(() => Movie, (movie) => movie.showtimes, {
         onDelete: "CASCADE",

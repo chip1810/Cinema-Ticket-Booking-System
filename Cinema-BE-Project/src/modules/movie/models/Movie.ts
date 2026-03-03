@@ -46,6 +46,9 @@ export class Movie {
   })
   status!: MovieStatus;
 
+  @Column({ type: "boolean", default: true })
+  isActive!: boolean;
+
   @ManyToMany(() => Genre, (genre) => genre.movies)
   @JoinTable({
     name: "movie_genres",

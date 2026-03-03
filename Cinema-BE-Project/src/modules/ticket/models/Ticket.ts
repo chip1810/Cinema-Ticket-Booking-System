@@ -22,6 +22,12 @@ export class Ticket {
     @Generated("uuid")
     UUID!: string;
 
+    @Column()
+    showtimeId!: number;   // 👈 thêm cái này
+
+    @Column()
+    seatId!: number;       // 👈 thêm cái này
+
     @ManyToOne(() => Showtime)
     showtime!: Showtime;
 
@@ -30,7 +36,7 @@ export class Ticket {
 
     @ManyToOne(() => Order, (order) => order.tickets, { onDelete: "CASCADE" })
     order!: Order;
-    
+
     @Column("decimal", { precision: 10, scale: 2 })
     price!: number;
 

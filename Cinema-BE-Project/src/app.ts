@@ -11,6 +11,8 @@ import { MovieController } from "./modules/movie/controllers/MovieController";
 import { ShowtimeController } from "./controllers/ShowtimeController";
 import { ConcessionController } from "./controllers/ConcessionController";
 import { PricingController } from "./controllers/PricingController";
+import staffRouter from "./modules/staff/routes/StaffRouter";
+import seatRouter from "./modules/seat/routes/SeatRoute"
 
 // Seed entities
 import { Hall } from "./modules/hall/models/Hall";
@@ -57,6 +59,10 @@ app.delete("/api/concessions/:id", (req, res) => concession.delete(req, res));
 // --- Pricing Route ---
 app.post("/api/pricing/calculate", (req, res) => pricing.calculate(req, res));
 
+//Staff Routes
+app.use("/api/staff", staffRouter);
+app.use("/api/seat", seatRouter)
+
 // --- Seed Route (Dev only) ---
 app.post("/api/seed", async (req: Request, res: Response) => {
     try {
@@ -89,15 +95,4 @@ app.post("/api/seed", async (req: Request, res: Response) => {
 app.get("/", (_req, res) => res.json({ status: "ok", message: "Cinema API running" }));
 
 // --- Start Server ---
-const PORT = process.env.PORT || 3000;
-if (require.main === module) {
-    AppDataSource.initialize()
-        .then(() => {
-            console.log("✅ Database connected");
-            app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
-        })
-        .catch((err) => {
-            console.error("❌ Database connection failed:", err.message);
-            process.exit(1);
-        });
-}
+

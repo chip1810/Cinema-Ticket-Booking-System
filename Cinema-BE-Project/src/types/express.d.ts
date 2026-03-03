@@ -1,9 +1,9 @@
-import { User } from "../modules/auth/models/User";
+// src/types/express.d.ts
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User;
-    }
+import { AuthUser } from "./auth-user";
+
+declare module "express-serve-static-core" {
+  interface Request {
+    user?: AuthUser;
   }
 }

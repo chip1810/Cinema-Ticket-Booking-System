@@ -15,7 +15,7 @@ export enum SeatType {
 }
 
 @Entity("seats")
-@Unique(["hall", "seatNumber"])
+@Unique(["hallId", "seatNumber"])
 export class Seat {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -25,7 +25,7 @@ export class Seat {
   UUID!: string;
 
   @Column()
-  seatNumber!: string; // A1, A2
+  seatNumber!: string;
 
   @Column({
     type: "enum",
@@ -33,6 +33,10 @@ export class Seat {
     default: SeatType.NORMAL,
   })
   type!: SeatType;
+
+  // 👇 THÊM CÁI NÀY
+  @Column()
+  hallId!: number;
 
   @ManyToOne(() => Hall, { onDelete: "CASCADE" })
   hall!: Hall;

@@ -11,10 +11,7 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "resolveJsonModule": true,
-        "types": [
-            "node",
-            "jest"
-        ]
+        
     },
     "include": [
         "src/**/*"

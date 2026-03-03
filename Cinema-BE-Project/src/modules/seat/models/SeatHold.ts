@@ -1,33 +1,43 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  CreateDateColumn,
-  Unique,
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    CreateDateColumn,
+    Unique,
+    JoinColumn
 } from "typeorm";
 import { Showtime } from "../../showtime/models/Showtime";
 import { Seat } from "./Seat";
 import { User } from "../../auth/models/User";
 
 @Entity("seat_holds")
-@Unique(["showtime", "seat"])
+@Unique(["showtimeId", "seatId"])
 export class SeatHold {
-  @PrimaryGeneratedColumn()
-  id!: number;
+    @PrimaryGeneratedColumn()
+    id!: number;
 
-  @ManyToOne(() => Showtime, { onDelete: "CASCADE" })
-  showtime!: Showtime;
+    // 👇 THÊM FK COLUMN EXPLICIT
+    @Column()
+    showtimeId!: number;
 
-  @ManyToOne(() => Seat, { onDelete: "CASCADE" })
-  seat!: Seat;
+    @Column()
+    seatId!: number;
 
-  @ManyToOne(() => User, { nullable: true })
-  user!: User;
+    @ManyToOne(() => Showtime, { onDelete: "CASCADE" })
+    @JoinColumn({ name: "showtimeId" })
+    showtime!: Showtime;
 
-  @Column({ type: "timestamp" })
-  expiresAt!: Date;
+    @ManyToOne(() => Seat, { onDelete: "CASCADE" })
+    @JoinColumn({ name: "seatId" })
+    seat!: Seat;
 
-  @CreateDateColumn()
-  createdAt!: Date;
+    @ManyToOne(() => User, { nullable: true })
+    user!: User;
+
+    @Column({ type: "timestamptz" })
+    expiresAt!: Date;
+
+    @CreateDateColumn({ type: "timestamptz"})
+    createdAt!: Date;
 }

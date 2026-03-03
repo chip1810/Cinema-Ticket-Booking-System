@@ -1,6 +1,6 @@
 import { IsArray, IsString } from "class-validator";
 
-export class HoldSeatDTO {
+export class ConfirmBookingDTO {
 
   @IsString()
   showtimeUUID!: string;

@@ -40,13 +40,13 @@ export class User {
   @Column({ nullable: true })
   fullName?: string;
 
-  @Column({ nullable: true })
+  @Column({ unique: true, nullable: true })
   phoneNumber?: string;
 
   @Column({ nullable: true })
   resetPasswordOTP?: string;
 
-  @Column({ type: "timestamp", nullable: true })
+  @Column({ type: "timestamptz", nullable: true })
   resetPasswordExpires?: Date;
 
   @CreateDateColumn()

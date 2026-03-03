@@ -28,7 +28,7 @@ export class ShowtimeController {
 
     async delete(req: Request, res: Response) {
         try {
-            await showtimeService.deleteShowtime(String(req.params.id));
+            await showtimeService.deleteShowtime(Number(req.params.id));
             return res.status(204).send();
         } catch (e: any) {
             return res.status(404).json({ message: e.message });
