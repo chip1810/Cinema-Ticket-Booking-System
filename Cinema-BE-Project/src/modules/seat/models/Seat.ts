@@ -7,12 +7,7 @@ import {
   Generated,
 } from "typeorm";
 import { Hall } from "../../hall/models/Hall";
-
-export enum SeatType {
-  NORMAL = "NORMAL",
-  VIP = "VIP",
-  COUPLE = "COUPLE",
-}
+import { SeatType } from "./enums/SeatType";
 
 @Entity("seats")
 @Unique(["hallId", "seatNumber"])

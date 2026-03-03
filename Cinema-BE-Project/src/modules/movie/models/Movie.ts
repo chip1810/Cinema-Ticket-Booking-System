@@ -9,11 +9,7 @@ import {
 } from "typeorm";
 import { Genre } from "../../genre/models/Genre";
 import { Showtime } from "../../showtime/models/Showtime";
-
-export enum MovieStatus {
-  NOW_SHOWING = "Now Showing",
-  COMING_SOON = "Coming Soon",
-}
+import { MovieStatus } from "./enums/MovieStatus";
 
 @Entity("movies")
 export class Movie {
@@ -39,6 +35,9 @@ export class Movie {
   @Column({ nullable: true })
   posterUrl?: string;
 
+  @Column("decimal", { precision: 2, scale: 1, nullable: true })
+  rating?: number;
+
   @Column({
     type: "enum",
     enum: MovieStatus,
@@ -57,4 +56,5 @@ export class Movie {
 
   @OneToMany(() => Showtime, (showtime) => showtime.movie)
   showtimes!: Showtime[];
+
 }

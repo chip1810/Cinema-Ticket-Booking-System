@@ -17,6 +17,8 @@ import seatRouter from "./modules/seat/routes/SeatRoute"
 // Seed entities
 import { Hall } from "./modules/hall/models/Hall";
 import { Genre } from "./modules/genre/models/Genre";
+// Routes
+import showtimeRoutes from "./modules/showtime/routes/showtimeRoutes";
 
 dotenv.config();
 
@@ -24,6 +26,7 @@ export const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
+app.use("/api/showtimes", showtimeRoutes);
 
 // --- Controller instances ---
 const auth = new AuthController();

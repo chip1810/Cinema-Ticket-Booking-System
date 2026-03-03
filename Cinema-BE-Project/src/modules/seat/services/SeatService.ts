@@ -1,7 +1,7 @@
 import { AppDataSource } from "../../../data-source";
 import { Seat } from "../models/Seat";
 import { Showtime } from "../../showtime/models/Showtime";
-import { SeatHold } from "../models/SeatHold";
+import { SeatHold } from "../../seat/models/SeatHold";
 import { Ticket } from "../../ticket/models/Ticket";
 import { getIO } from "../../../socket";
 
@@ -194,4 +194,21 @@ export class SeatService {
       await queryRunner.release();
     }
   }
+
+  async getSeatsByHallId(hallId: number) {
+    const seatRepository = AppDataSource.getRepository(Seat);
+
+    const seats = await seatRepository.find({
+      where: { hall: { id: hallId } },
+      order: { seatNumber: "ASC" },
+    });
+
+    return seats.map((s) => ({
+      UUID: s.UUID,
+      seatNumber: s.seatNumber,
+      type: s.type,
+    }));
+  }
+
+
 }

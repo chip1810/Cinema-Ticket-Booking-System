@@ -74,4 +74,24 @@ export class SeatController {
             return ApiResponse.error(res, error.message, 400);
         }
     }
+
+  async getSeatsByHallId(req: Request, res: Response) {
+    try {
+      const hallId = Number(req.params.hallId);
+
+      if (isNaN(hallId)) {
+        return ApiResponse.error(res, "Invalid hallId", 400);
+      }
+
+      const seats = await seatService.getSeatsByHallId(hallId);
+
+      return ApiResponse.success(res, seats, "Seats fetched successfully");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Internal Server Error";
+
+      return ApiResponse.error(res, message, 500);
+    }
+  }
+
 }

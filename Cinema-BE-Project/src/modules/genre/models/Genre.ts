@@ -9,8 +9,8 @@ import { Movie } from "../../movie/models/Movie";
 
 @Entity("genres")
 export class Genre {
-    @PrimaryGeneratedColumn()
-    id!: number;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
     @Column({ type: "uuid", unique: true })
     @Generated("uuid")
@@ -19,8 +19,8 @@ export class Genre {
     @Column({ unique: true })
     name!: string;
 
-    @Column({ type: "text", nullable: true })
-    description?: string;
+  @Column({ type: "text", nullable: true })
+  description?: string;
 
     @ManyToMany(() => Movie, (movie) => movie.genres)
     movies!: Movie[];

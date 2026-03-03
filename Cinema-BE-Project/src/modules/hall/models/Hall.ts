@@ -9,8 +9,8 @@ import { Showtime } from "../../showtime/models/Showtime";
 
 @Entity("halls")
 export class Hall {
-    @PrimaryGeneratedColumn()
-    id!: number;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
     @Column({ type: "uuid", unique: true })
     @Generated("uuid")
