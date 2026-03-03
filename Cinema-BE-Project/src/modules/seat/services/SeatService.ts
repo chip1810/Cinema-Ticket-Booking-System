@@ -4,7 +4,11 @@ import { Showtime } from "../../showtime/models/Showtime";
 import { SeatHold } from "../../seat/models/SeatHold";
 import { Ticket } from "../../ticket/models/Ticket";
 import { getIO } from "../../../socket";
-
+import { Order } from "../../order/models/Order";
+import { PricingRule } from "../../pricing_rule/models/PricingRule";
+import { OrderStatus } from "../../order/models/Order";
+import { Concession } from "../../concession/models/Concession";
+import { OrderItem } from "../../order_item/models/OrderItem";
 export class SeatService {
   /**
    * HOLD SEATS (giữ ghế 5 phút)
@@ -37,6 +41,7 @@ export class SeatService {
 
       const now = new Date();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
 
       for (const seat of seats) {
         if (seat.hallId !== showtime.hallId) {
@@ -112,6 +117,7 @@ export class SeatService {
   async confirmBooking(
     showtimeUUID: string,
     seatUUIDs: string[],
+    concessions: { concessionUUID: string; quantity: number }[],
     userId: number
   ) {
     const queryRunner = AppDataSource.createQueryRunner();
@@ -125,16 +131,28 @@ export class SeatService {
         lock: { mode: "pessimistic_write" },
       });
 
-      const now = new Date();
       const confirmedSeats: string[] = [];
+      let totalAmount = 0;
 
+      // 🧾 Create Order
+      const order = queryRunner.manager.create(Order, {
+        user: { id: userId },
+        status: OrderStatus.PENDING,
+        totalAmount: 0,
+      });
+
+      await queryRunner.manager.save(order);
+
+      // ===============================
+      // 🎟 PROCESS SEATS
+      // ===============================
       for (const seatUUID of seatUUIDs) {
+
         const seat = await queryRunner.manager.findOneOrFail(Seat, {
           where: { UUID: seatUUID },
           lock: { mode: "pessimistic_write" },
         });
 
-        // 🔒 Lock hold row
         const hold = await queryRunner.manager
           .createQueryBuilder(SeatHold, "hold")
           .setLock("pessimistic_write")
@@ -144,39 +162,117 @@ export class SeatService {
           .andWhere("hold.seatId = :seatId", {
             seatId: seat.id,
           })
+          .andWhere("hold.expiresAt > NOW()")
           .getOne();
 
         if (!hold) {
-          throw new Error(`Seat ${seat.seatNumber} not held`);
+          throw new Error(`Seat ${seat.seatNumber} not held or expired`);
         }
 
-        if (hold.expiresAt < now) {
-          throw new Error(`Seat ${seat.seatNumber} hold expired`);
-        }
-
-        if (hold.user?.id !== userId) {
+        if (hold.userId !== userId) {
           throw new Error(`Seat ${seat.seatNumber} held by another user`);
         }
 
-        // 🎟 Create ticket
+        const existingTicket = await queryRunner.manager.findOne(Ticket, {
+          where: {
+            showtime: { id: showtime.id },
+            seat: { id: seat.id },
+          },
+          lock: { mode: "pessimistic_write" },
+        });
+
+        if (existingTicket) {
+          throw new Error(`Seat ${seat.seatNumber} already sold`);
+        }
+
+        const pricingRule = await queryRunner.manager.findOneOrFail(
+          PricingRule,
+          {
+            where: {
+              showtime: { id: showtime.id },
+              seatType: seat.type,
+            },
+          }
+        );
+
+        const seatPrice = Number(pricingRule.price);
+
         const ticket = queryRunner.manager.create(Ticket, {
           showtime,
           seat,
+          order,
           user: { id: userId },
-          price: 100000,
+          price: seatPrice,
         });
 
         await queryRunner.manager.save(ticket);
 
-        // 🗑 Remove hold
+        totalAmount += seatPrice;
+
         await queryRunner.manager.remove(hold);
 
         confirmedSeats.push(seatUUID);
       }
 
+      // ===============================
+      // 🍿 PROCESS CONCESSIONS
+      // ===============================
+      const processedConcessions: any[] = [];
+
+      if (concessions && concessions.length > 0) {
+        for (const item of concessions) {
+
+          const concession = await queryRunner.manager.findOneOrFail(
+            Concession,
+            {
+              where: { UUID: item.concessionUUID },
+              lock: { mode: "pessimistic_write" }, // 🔒 lock stock
+            }
+          );
+
+          if (item.quantity <= 0) {
+            throw new Error("Invalid concession quantity");
+          }
+
+          if (concession.stockQuantity < item.quantity) {
+            throw new Error(`${concession.name} out of stock`);
+          }
+
+          const price = Number(concession.price);
+
+          const orderItem = queryRunner.manager.create(OrderItem, {
+            order,
+            concession,
+            quantity: item.quantity,
+            price, // snapshot price
+          });
+
+          await queryRunner.manager.save(orderItem);
+
+          // 📦 Reduce stock
+          concession.stockQuantity -= item.quantity;
+          await queryRunner.manager.save(concession);
+
+          totalAmount += price * item.quantity;
+
+          processedConcessions.push({
+            concessionUUID: concession.UUID,
+            name: concession.name,
+            quantity: item.quantity,
+            price,
+          });
+        }
+      }
+
+      // ===============================
+      // 💰 Update total
+      // ===============================
+      order.totalAmount = totalAmount;
+      await queryRunner.manager.save(order);
+
       await queryRunner.commitTransaction();
 
-      // 🔥 Emit realtime
+      // 🔥 Realtime emit
       const io = getIO();
       io.to(showtimeUUID).emit("seat-sold", {
         seatUUIDs: confirmedSeats,
@@ -184,17 +280,21 @@ export class SeatService {
 
       return {
         message: "Booking confirmed",
+        orderUUID: order.UUID,
+        totalAmount,
         seats: confirmedSeats,
+        concessions: processedConcessions,
       };
 
     } catch (error) {
-      await queryRunner.rollbackTransaction();
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
       throw error;
     } finally {
       await queryRunner.release();
     }
   }
-
   async getSeatsByHallId(hallId: number) {
     const seatRepository = AppDataSource.getRepository(Seat);
 
