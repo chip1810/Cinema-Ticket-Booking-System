@@ -67,7 +67,8 @@ export class SeatController {
                 dto.showtimeUUID,
                 dto.seatUUIDs,
                 dto.concessions || [],
-                req.user.id
+                req.user.id,
+                dto.voucherUUID
             );
 
             return ApiResponse.success(res, result, "Booking confirmed");
