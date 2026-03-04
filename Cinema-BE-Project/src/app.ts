@@ -48,10 +48,12 @@ app.post("/api/movies", (req, res) => movie.create(req, res));
 app.put("/api/movies/:id", (req, res) => movie.update(req, res));
 app.delete("/api/movies/:id", (req, res) => movie.delete(req, res));
 
-// --- Showtime Routes ---
-app.get("/api/showtimes", (req, res) => showtime.getAll(req, res));
+// --- Manager Showtime Routes (Create / Update / Cancel) ---
+app.get("/api/showtimes/:id", (req, res) => showtime.getById(req, res));
 app.post("/api/showtimes", (req, res) => showtime.create(req, res));
+app.put("/api/showtimes/:id", (req, res) => showtime.update(req, res));
 app.delete("/api/showtimes/:id", (req, res) => showtime.delete(req, res));
+
 
 // --- Concession Routes ---
 app.get("/api/concessions", (req, res) => concession.getAll(req, res));
