@@ -22,6 +22,7 @@ export class MovieService {
             duration: data.duration,
             releaseDate: new Date(data.releaseDate),
             posterUrl: data.posterUrl,
+            trailerUrl: data.trailerUrl,
             status: data.status as any,
             genres,
         });
@@ -47,6 +48,7 @@ export class MovieService {
             ...(data.duration && { duration: data.duration }),
             ...(data.releaseDate && { releaseDate: new Date(data.releaseDate) }),
             ...(data.posterUrl && { posterUrl: data.posterUrl }),
+            ...(data.trailerUrl && { trailerUrl: data.trailerUrl }),
             ...(data.status && { status: data.status }),
         });
         return this.movieRepo.save(movie);
@@ -54,6 +56,7 @@ export class MovieService {
 
     async deleteMovie(id: number) {
         const movie = await this.getMovieById(id);
-        return this.movieRepo.remove(movie);
+        movie.isActive = false;
+        return this.movieRepo.save(movie);
     }
 }
