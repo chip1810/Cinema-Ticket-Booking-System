@@ -16,7 +16,6 @@ export enum UserRole {
 
 @Entity("users")
 export class User {
-
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -54,4 +53,7 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt!: Date;
+  
+  @Column({ default: false })
+  isBlocked!: boolean;
 }
