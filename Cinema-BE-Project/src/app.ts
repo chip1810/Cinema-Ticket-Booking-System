@@ -61,9 +61,12 @@ app.delete("/api/showtimes/:id", (req, res) => showtime.delete(req, res));
 
 // --- Concession Routes ---
 app.get("/api/concessions", (req, res) => concession.getAll(req, res));
+app.get("/api/concessions/:id", (req, res) => concession.getById(req, res));
 app.post("/api/concessions", (req, res) => concession.create(req, res));
 app.put("/api/concessions/:id", (req, res) => concession.update(req, res));
+app.patch("/api/concessions/:id/stock", (req, res) => concession.updateStock(req, res));
 app.delete("/api/concessions/:id", (req, res) => concession.delete(req, res));
+
 
 // --- Pricing Route ---
 app.post("/api/pricing/calculate", (req, res) => pricing.calculate(req, res));
