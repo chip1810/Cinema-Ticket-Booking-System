@@ -12,6 +12,7 @@ import { ShowtimeController } from "./controllers/ShowtimeController";
 import { ConcessionController } from "./controllers/ConcessionController";
 import { PricingController } from "./controllers/PricingController";
 import { HallManagerController } from "./controllers/HallManagerController";
+import { PricingManagerController } from "./controllers/PricingManagerController";
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
 
@@ -36,6 +37,7 @@ const showtime = new ShowtimeController();
 const concession = new ConcessionController();
 const pricing = new PricingController();
 const hallManager = new HallManagerController();
+const pricingManager = new PricingManagerController();
 
 // --- Auth Routes ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
@@ -78,6 +80,11 @@ app.put("/api/manager/halls/:id", (req, res) => hallManager.updateHall(req, res)
 app.delete("/api/manager/halls/:id", (req, res) => hallManager.deleteHall(req, res));
 app.post("/api/manager/halls/:id/layout", (req, res) => hallManager.setSeatLayout(req, res));
 app.get("/api/manager/halls/:id/layout", (req, res) => hallManager.getSeatLayout(req, res));
+
+// --- Manager Pricing Rules ---
+app.get("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.getByShowtime(req, res));
+app.post("/api/manager/pricing", (req, res) => pricingManager.setRules(req, res));
+app.delete("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.deleteByShowtime(req, res));
 
 // --- Seed Route (Dev only) ---
 app.post("/api/seed", async (req: Request, res: Response) => {
