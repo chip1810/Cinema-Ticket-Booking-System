@@ -13,6 +13,7 @@ import { ConcessionController } from "./controllers/ConcessionController";
 import { PricingController } from "./controllers/PricingController";
 import { HallManagerController } from "./controllers/HallManagerController";
 import { PricingManagerController } from "./controllers/PricingManagerController";
+import { NewsController } from "./controllers/NewsController";
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
 
@@ -38,6 +39,7 @@ const concession = new ConcessionController();
 const pricing = new PricingController();
 const hallManager = new HallManagerController();
 const pricingManager = new PricingManagerController();
+const news = new NewsController();
 
 // --- Auth Routes ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
@@ -70,6 +72,14 @@ app.delete("/api/concessions/:id", (req, res) => concession.delete(req, res));
 
 // --- Pricing Route ---
 app.post("/api/pricing/calculate", (req, res) => pricing.calculate(req, res));
+
+// --- News Routes ---
+app.get("/api/news", (req, res) => news.getAll(req, res));
+app.get("/api/news/:id", (req, res) => news.getById(req, res));
+app.post("/api/manager/news", (req, res) => news.create(req, res));
+app.put("/api/manager/news/:id", (req, res) => news.update(req, res));
+app.patch("/api/manager/news/:id/publish", (req, res) => news.togglePublish(req, res));
+app.delete("/api/manager/news/:id", (req, res) => news.delete(req, res));
 
 //Staff Routes
 app.use("/api/staff", staffRouter);

@@ -14,6 +14,7 @@ import { PricingRule } from "./modules/pricing_rule/models/PricingRule";
 import { Ticket } from "./modules/ticket/models/Ticket";
 import { Order } from "./modules/order/models/Order";
 import { OrderItem } from "./modules/order_item/models/OrderItem";
+import { News } from "./modules/news/models/News";
 
 dotenv.config();
 
@@ -25,5 +26,5 @@ export const AppDataSource = new DataSource({
     },
     synchronize: true,
     logging: true,
-    entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem],
+    entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem, News],
 });
