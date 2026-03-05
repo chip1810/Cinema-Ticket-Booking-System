@@ -13,6 +13,7 @@ import { ConcessionController } from "./controllers/ConcessionController";
 import { PricingController } from "./controllers/PricingController";
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
+import adminRoutes from "./modules/admin/routes/admin.routes";
 
 // Seed entities
 import { Hall } from "./modules/hall/models/Hall";
@@ -27,6 +28,7 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 app.use("/api/showtimes", showtimeRoutes);
+app.use("/api/admin", adminRoutes);
 
 // --- Controller instances ---
 const auth = new AuthController();

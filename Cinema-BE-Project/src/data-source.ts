@@ -24,6 +24,6 @@ export const AppDataSource = new DataSource({
         rejectUnauthorized: false,
     },
     synchronize: false,
-    logging: true,
+    logging: false,
     entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem],
 });
