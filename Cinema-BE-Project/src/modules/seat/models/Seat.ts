@@ -22,6 +22,13 @@ export class Seat {
   @Column()
   seatNumber!: string;
 
+  // Tọa độ ma trận ghế (hàng, cột)
+  @Column({ type: "int", nullable: true })
+  row?: number;
+
+  @Column({ type: "int", nullable: true })
+  col?: number;
+
   @Column({
     type: "enum",
     enum: SeatType,

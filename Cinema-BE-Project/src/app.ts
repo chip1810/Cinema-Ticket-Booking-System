@@ -11,6 +11,7 @@ import { MovieController } from "./modules/movie/controllers/MovieController";
 import { ShowtimeController } from "./controllers/ShowtimeController";
 import { ConcessionController } from "./controllers/ConcessionController";
 import { PricingController } from "./controllers/PricingController";
+import { HallManagerController } from "./controllers/HallManagerController";
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
 
@@ -34,6 +35,7 @@ const movie = new MovieController();
 const showtime = new ShowtimeController();
 const concession = new ConcessionController();
 const pricing = new PricingController();
+const hallManager = new HallManagerController();
 
 // --- Auth Routes ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
@@ -66,7 +68,16 @@ app.post("/api/pricing/calculate", (req, res) => pricing.calculate(req, res));
 
 //Staff Routes
 app.use("/api/staff", staffRouter);
-app.use("/api/seat", seatRouter)
+app.use("/api/seat", seatRouter);
+
+// --- Manager Hall & Seat Layout Routes ---
+app.get("/api/manager/halls", (req, res) => hallManager.getAllHalls(req, res));
+app.get("/api/manager/halls/:id", (req, res) => hallManager.getHallById(req, res));
+app.post("/api/manager/halls", (req, res) => hallManager.createHall(req, res));
+app.put("/api/manager/halls/:id", (req, res) => hallManager.updateHall(req, res));
+app.delete("/api/manager/halls/:id", (req, res) => hallManager.deleteHall(req, res));
+app.post("/api/manager/halls/:id/layout", (req, res) => hallManager.setSeatLayout(req, res));
+app.get("/api/manager/halls/:id/layout", (req, res) => hallManager.getSeatLayout(req, res));
 
 // --- Seed Route (Dev only) ---
 app.post("/api/seed", async (req: Request, res: Response) => {
