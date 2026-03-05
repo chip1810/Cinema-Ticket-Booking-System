@@ -14,6 +14,7 @@ import { PricingController } from "./controllers/PricingController";
 import { HallManagerController } from "./controllers/HallManagerController";
 import { PricingManagerController } from "./controllers/PricingManagerController";
 import { NewsController } from "./controllers/NewsController";
+import { BannerController } from "./controllers/BannerController";
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
 
@@ -40,6 +41,7 @@ const pricing = new PricingController();
 const hallManager = new HallManagerController();
 const pricingManager = new PricingManagerController();
 const news = new NewsController();
+const banner = new BannerController();
 
 // --- Auth Routes ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
@@ -80,6 +82,13 @@ app.post("/api/manager/news", (req, res) => news.create(req, res));
 app.put("/api/manager/news/:id", (req, res) => news.update(req, res));
 app.patch("/api/manager/news/:id/publish", (req, res) => news.togglePublish(req, res));
 app.delete("/api/manager/news/:id", (req, res) => news.delete(req, res));
+
+// --- Banner Routes ---
+app.get("/api/banners", (req, res) => banner.getAll(req, res));            // public
+app.post("/api/manager/banners", (req, res) => banner.create(req, res));
+app.put("/api/manager/banners/:id", (req, res) => banner.update(req, res));
+app.patch("/api/manager/banners/:id/toggle", (req, res) => banner.toggle(req, res));
+app.delete("/api/manager/banners/:id", (req, res) => banner.delete(req, res));
 
 //Staff Routes
 app.use("/api/staff", staffRouter);
