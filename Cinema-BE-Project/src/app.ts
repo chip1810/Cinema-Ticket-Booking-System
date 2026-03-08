@@ -15,6 +15,7 @@ import { HallManagerController } from "./controllers/HallManagerController";
 import { PricingManagerController } from "./controllers/PricingManagerController";
 import { NewsController } from "./controllers/NewsController";
 import { BannerController } from "./controllers/BannerController";
+import { DashboardController } from "./controllers/DashboardController";
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
 
@@ -42,6 +43,7 @@ const hallManager = new HallManagerController();
 const pricingManager = new PricingManagerController();
 const news = new NewsController();
 const banner = new BannerController();
+const dashboard = new DashboardController();
 
 // --- Auth Routes ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
@@ -89,6 +91,10 @@ app.post("/api/manager/banners", (req, res) => banner.create(req, res));
 app.put("/api/manager/banners/:id", (req, res) => banner.update(req, res));
 app.patch("/api/manager/banners/:id/toggle", (req, res) => banner.toggle(req, res));
 app.delete("/api/manager/banners/:id", (req, res) => banner.delete(req, res));
+
+// --- Manager Dashboard Routes ---
+app.get("/api/manager/dashboard/summary", (req, res) => dashboard.getSummary(req, res));
+app.get("/api/manager/dashboard/movies", (req, res) => dashboard.getMovieStats(req, res));
 
 //Staff Routes
 app.use("/api/staff", staffRouter);
