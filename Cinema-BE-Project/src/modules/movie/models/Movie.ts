@@ -35,6 +35,9 @@ export class Movie {
   @Column({ nullable: true })
   posterUrl?: string;
 
+  @Column({ nullable: true })
+  bannerUrl?: string;
+
   @Column("decimal", { precision: 2, scale: 1, nullable: true })
   rating?: number;
 
