@@ -17,11 +17,12 @@ import { BannerController } from "./controllers/BannerController";
 import { DashboardController } from "./controllers/DashboardController";
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
+import adminRoutes from "./modules/admin/routes/admin.routes";
 import showtimeRoutes from "./modules/showtime/routes/showtimeRoutes";
 import voucherRoutes from "./modules/voucher/routes/voucherRoutes";
 import concessionRoutes from "./modules/concession/routes/concessionRoutes";
-import adminRoutes from "./modules/admin/routes/admin.routes";
 import orderRoutes from "./modules/order/routes/orderRoutes";
+
 
 // Seed entities
 import { Hall } from "./modules/hall/models/Hall";
