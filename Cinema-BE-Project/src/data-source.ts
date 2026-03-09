@@ -16,6 +16,8 @@ import { Order } from "./modules/order/models/Order";
 import { OrderItem } from "./modules/order_item/models/OrderItem";
 import { Voucher } from "./modules/voucher/models/Voucher";
 import { VoucherUsage } from "./modules/voucher/models/VoucherUsage";
+import { News } from "./modules/news/models/News";
+import { Banner } from "./modules/banner/models/Banner";
 
 dotenv.config();
 
@@ -25,7 +27,7 @@ export const AppDataSource = new DataSource({
     ssl: {
         rejectUnauthorized: false,
     },
-    synchronize: true,
+    synchronize: false,
     logging: true,
-    entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem, Voucher, VoucherUsage],
+    entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem, Voucher, VoucherUsage,News, Banner],
 });
