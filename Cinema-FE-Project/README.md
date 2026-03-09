@@ -94,7 +94,7 @@ copy .env.example .env
 npm start
 ```
 
-Ứng dụng sẽ chạy tại: `http://localhost:3000`
+Ứng dụng sẽ chạy tại: `http://localhost:4200`
 
 5. **Build production**
 ```bash

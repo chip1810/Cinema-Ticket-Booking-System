@@ -1,0 +1,37 @@
+import ShowtimeCard from "./ShowtimeCard";
+
+export default function ShowtimeSection({ showtimes }) {
+
+  const grouped = {};
+
+  showtimes?.forEach((s) => {
+    const date = s.startTime.split("T")[0];
+
+    if (!grouped[date]) grouped[date] = [];
+    grouped[date].push(s);
+  });
+
+  return (
+    <section className="max-w-6xl mx-auto px-6 pb-16">
+
+      <h2 className="text-2xl font-bold mb-6">Showtimes</h2>
+
+      {Object.keys(grouped).map((date) => (
+        <div key={date} className="mb-6">
+
+          <h3 className="text-lg font-semibold mb-3">
+            {date}
+          </h3>
+
+          <div className="flex flex-wrap gap-3">
+            {grouped[date].map((s) => (
+              <ShowtimeCard key={s.id} showtime={s} />
+            ))}
+          </div>
+
+        </div>
+      ))}
+
+    </section>
+  );
+}
