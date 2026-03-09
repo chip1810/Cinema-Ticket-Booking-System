@@ -1,10 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, Generated } from "typeorm";
 
-export enum ConcessionType {
-  FOOD = "Food",
-  DRINK = "Drink",
-  COMBO = "Combo",
-}
+import { ConcessionType } from "./enums/ConcessionType";
 
 @Entity("concessions")
 export class Concession {

@@ -100,6 +100,11 @@ export class VoucherController {
             return ApiResponse.error(res, messages.join(", "), 400);
         }
 
+        // Thêm sau validate, trước check req.user
+        if (!dto.voucherUUID && (!dto.code || typeof dto.code !== "string" || dto.code.trim() === "")) {
+            return ApiResponse.error(res, "Cần có voucherUUID hoặc code", 400);
+        }
+
         if (!req.user) {
             return ApiResponse.error(res, "Unauthorized", 401);
         }

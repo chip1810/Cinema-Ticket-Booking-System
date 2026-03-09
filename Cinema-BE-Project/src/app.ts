@@ -9,7 +9,6 @@ import { AppDataSource } from "./data-source";
 import { AuthController } from "./modules/auth/controllers/AuthController";
 import { MovieController } from "./modules/movie/controllers/MovieController";
 import { ShowtimeController } from "./controllers/ShowtimeController";
-import { ConcessionController } from "./controllers/ConcessionController";
 import { PricingController } from "./controllers/PricingController";
 import { HallManagerController } from "./controllers/HallManagerController";
 import { PricingManagerController } from "./controllers/PricingManagerController";
@@ -20,8 +19,9 @@ import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
 import showtimeRoutes from "./modules/showtime/routes/showtimeRoutes";
 import voucherRoutes from "./modules/voucher/routes/voucherRoutes";
-
+import concessionRoutes from "./modules/concession/routes/concessionRoutes";
 import adminRoutes from "./modules/admin/routes/admin.routes";
+import orderRoutes from "./modules/order/routes/orderRoutes";
 
 // Seed entities
 import { Hall } from "./modules/hall/models/Hall";
@@ -37,12 +37,16 @@ app.use(cors());
 app.use(helmet());
 app.use("/api/showtimes", showtimeRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/concessions", concessionRoutes);
+app.use("/api/staff", staffRouter);
+app.use("/api/seat", seatRouter)
+app.use("/api/vouchers", voucherRoutes);
 
 // --- Controller instances ---
 const auth = new AuthController();
 const movie = new MovieController();
 const showtime = new ShowtimeController();
-const concession = new ConcessionController();
 const pricing = new PricingController();
 const hallManager = new HallManagerController();
 const pricingManager = new PricingManagerController();
@@ -69,16 +73,6 @@ app.post("/api/showtimes", (req, res) => showtime.create(req, res));
 app.put("/api/showtimes/:id", (req, res) => showtime.update(req, res));
 app.delete("/api/showtimes/:id", (req, res) => showtime.delete(req, res));
 
-
-// --- Concession Routes ---
-app.get("/api/concessions", (req, res) => concession.getAll(req, res));
-app.get("/api/concessions/:id", (req, res) => concession.getById(req, res));
-app.post("/api/concessions", (req, res) => concession.create(req, res));
-app.put("/api/concessions/:id", (req, res) => concession.update(req, res));
-app.patch("/api/concessions/:id/stock", (req, res) => concession.updateStock(req, res));
-app.delete("/api/concessions/:id", (req, res) => concession.delete(req, res));
-
-
 // --- Pricing Route ---
 app.post("/api/pricing/calculate", (req, res) => pricing.calculate(req, res));
 
@@ -100,12 +94,6 @@ app.delete("/api/manager/banners/:id", (req, res) => banner.delete(req, res));
 // --- Manager Dashboard Routes ---
 app.get("/api/manager/dashboard/summary", (req, res) => dashboard.getSummary(req, res));
 app.get("/api/manager/dashboard/movies", (req, res) => dashboard.getMovieStats(req, res));
-
-//Staff Routes
-app.use("/api/staff", staffRouter);
-app.use("/api/seat", seatRouter)
-app.use("/api/vouchers", voucherRoutes);
-
 
 // --- Manager Hall & Seat Layout Routes ---
 app.get("/api/manager/halls", (req, res) => hallManager.getAllHalls(req, res));
@@ -152,5 +140,4 @@ app.post("/api/seed", async (req: Request, res: Response) => {
 // --- Health Check ---
 app.get("/", (_req, res) => res.json({ status: "ok", message: "Cinema API running" }));
 
-// --- Start Server ---
 

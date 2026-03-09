@@ -1,5 +1,5 @@
-import { AppDataSource } from "../data-source";
-import { Concession } from "../modules/concession/models/Concession";
+import { AppDataSource } from "../../../data-source";
+import { Concession } from "../models/Concession";
 import { CreateConcessionDTO } from "../dtos/CreateConcession.dto";
 
 export class ConcessionService {

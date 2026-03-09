@@ -21,4 +21,8 @@ export class ConfirmBookingDTO {
   @IsOptional()
   @IsUUID()
   voucherUUID?: string;
+
+  @IsOptional()
+  @IsString()
+  voucherCode?: string;
 }
