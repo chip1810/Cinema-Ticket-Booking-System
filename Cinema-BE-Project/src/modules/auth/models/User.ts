@@ -16,7 +16,6 @@ export enum UserRole {
 
 @Entity("users")
 export class User {
-
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -42,6 +41,9 @@ export class User {
 
   @Column({ unique: true, nullable: true })
   phoneNumber?: string;
+
+  @Column({ name: "is_blocked", default: false })
+  isBlocked!: boolean;
 
   @Column({ nullable: true })
   resetPasswordOTP?: string;

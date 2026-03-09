@@ -17,6 +17,7 @@ import seatRouter from "./modules/seat/routes/SeatRoute"
 import showtimeRoutes from "./modules/showtime/routes/showtimeRoutes";
 import voucherRoutes from "./modules/voucher/routes/voucherRoutes";
 
+import adminRoutes from "./modules/admin/routes/admin.routes";
 
 // Seed entities
 import { Hall } from "./modules/hall/models/Hall";
@@ -31,6 +32,7 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 app.use("/api/showtimes", showtimeRoutes);
+app.use("/api/admin", adminRoutes);
 
 // --- Controller instances ---
 const auth = new AuthController();
