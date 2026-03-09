@@ -9,16 +9,25 @@ import { AppDataSource } from "./data-source";
 import { AuthController } from "./modules/auth/controllers/AuthController";
 import { MovieController } from "./modules/movie/controllers/MovieController";
 import { ShowtimeController } from "./controllers/ShowtimeController";
-import { ConcessionController } from "./controllers/ConcessionController";
 import { PricingController } from "./controllers/PricingController";
+import { HallManagerController } from "./controllers/HallManagerController";
+import { PricingManagerController } from "./controllers/PricingManagerController";
+import { NewsController } from "./controllers/NewsController";
+import { BannerController } from "./controllers/BannerController";
+import { DashboardController } from "./controllers/DashboardController";
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
+import showtimeRoutes from "./modules/showtime/routes/showtimeRoutes";
+import voucherRoutes from "./modules/voucher/routes/voucherRoutes";
+import concessionRoutes from "./modules/concession/routes/concessionRoutes";
+import adminRoutes from "./modules/admin/routes/admin.routes";
+import orderRoutes from "./modules/order/routes/orderRoutes";
 
 // Seed entities
 import { Hall } from "./modules/hall/models/Hall";
 import { Genre } from "./modules/genre/models/Genre";
 // Routes
-import showtimeRoutes from "./modules/showtime/routes/showtimeRoutes";
+
 
 dotenv.config();
 
@@ -27,13 +36,23 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 app.use("/api/showtimes", showtimeRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/concessions", concessionRoutes);
+app.use("/api/staff", staffRouter);
+app.use("/api/seat", seatRouter)
+app.use("/api/vouchers", voucherRoutes);
 
 // --- Controller instances ---
 const auth = new AuthController();
 const movie = new MovieController();
 const showtime = new ShowtimeController();
-const concession = new ConcessionController();
 const pricing = new PricingController();
+const hallManager = new HallManagerController();
+const pricingManager = new PricingManagerController();
+const news = new NewsController();
+const banner = new BannerController();
+const dashboard = new DashboardController();
 
 // --- Auth Routes ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
@@ -48,23 +67,47 @@ app.post("/api/movies", (req, res) => movie.create(req, res));
 app.put("/api/movies/:id", (req, res) => movie.update(req, res));
 app.delete("/api/movies/:id", (req, res) => movie.delete(req, res));
 
-// --- Showtime Routes ---
-app.get("/api/showtimes", (req, res) => showtime.getAll(req, res));
+// --- Manager Showtime Routes (Create / Update / Cancel) ---
+app.get("/api/showtimes/:id", (req, res) => showtime.getById(req, res));
 app.post("/api/showtimes", (req, res) => showtime.create(req, res));
+app.put("/api/showtimes/:id", (req, res) => showtime.update(req, res));
 app.delete("/api/showtimes/:id", (req, res) => showtime.delete(req, res));
-
-// --- Concession Routes ---
-app.get("/api/concessions", (req, res) => concession.getAll(req, res));
-app.post("/api/concessions", (req, res) => concession.create(req, res));
-app.put("/api/concessions/:id", (req, res) => concession.update(req, res));
-app.delete("/api/concessions/:id", (req, res) => concession.delete(req, res));
 
 // --- Pricing Route ---
 app.post("/api/pricing/calculate", (req, res) => pricing.calculate(req, res));
 
-//Staff Routes
-app.use("/api/staff", staffRouter);
-app.use("/api/seat", seatRouter)
+// --- News Routes ---
+app.get("/api/news", (req, res) => news.getAll(req, res));
+app.get("/api/news/:id", (req, res) => news.getById(req, res));
+app.post("/api/manager/news", (req, res) => news.create(req, res));
+app.put("/api/manager/news/:id", (req, res) => news.update(req, res));
+app.patch("/api/manager/news/:id/publish", (req, res) => news.togglePublish(req, res));
+app.delete("/api/manager/news/:id", (req, res) => news.delete(req, res));
+
+// --- Banner Routes ---
+app.get("/api/banners", (req, res) => banner.getAll(req, res));            // public
+app.post("/api/manager/banners", (req, res) => banner.create(req, res));
+app.put("/api/manager/banners/:id", (req, res) => banner.update(req, res));
+app.patch("/api/manager/banners/:id/toggle", (req, res) => banner.toggle(req, res));
+app.delete("/api/manager/banners/:id", (req, res) => banner.delete(req, res));
+
+// --- Manager Dashboard Routes ---
+app.get("/api/manager/dashboard/summary", (req, res) => dashboard.getSummary(req, res));
+app.get("/api/manager/dashboard/movies", (req, res) => dashboard.getMovieStats(req, res));
+
+// --- Manager Hall & Seat Layout Routes ---
+app.get("/api/manager/halls", (req, res) => hallManager.getAllHalls(req, res));
+app.get("/api/manager/halls/:id", (req, res) => hallManager.getHallById(req, res));
+app.post("/api/manager/halls", (req, res) => hallManager.createHall(req, res));
+app.put("/api/manager/halls/:id", (req, res) => hallManager.updateHall(req, res));
+app.delete("/api/manager/halls/:id", (req, res) => hallManager.deleteHall(req, res));
+app.post("/api/manager/halls/:id/layout", (req, res) => hallManager.setSeatLayout(req, res));
+app.get("/api/manager/halls/:id/layout", (req, res) => hallManager.getSeatLayout(req, res));
+
+// --- Manager Pricing Rules ---
+app.get("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.getByShowtime(req, res));
+app.post("/api/manager/pricing", (req, res) => pricingManager.setRules(req, res));
+app.delete("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.deleteByShowtime(req, res));
 
 // --- Seed Route (Dev only) ---
 app.post("/api/seed", async (req: Request, res: Response) => {
@@ -97,5 +140,4 @@ app.post("/api/seed", async (req: Request, res: Response) => {
 // --- Health Check ---
 app.get("/", (_req, res) => res.json({ status: "ok", message: "Cinema API running" }));
 
-// --- Start Server ---
 

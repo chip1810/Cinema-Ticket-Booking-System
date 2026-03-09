@@ -9,6 +9,9 @@ import { PricingRule } from "../../pricing_rule/models/PricingRule";
 import { OrderStatus } from "../../order/models/Order";
 import { Concession } from "../../concession/models/Concession";
 import { OrderItem } from "../../order_item/models/OrderItem";
+import { Voucher } from "../../voucher/models/Voucher";
+import { VoucherUsage } from "../../voucher/models/VoucherUsage";
+
 export class SeatService {
   /**
    * HOLD SEATS (giữ ghế 5 phút)
@@ -118,7 +121,9 @@ export class SeatService {
     showtimeUUID: string,
     seatUUIDs: string[],
     concessions: { concessionUUID: string; quantity: number }[],
-    userId: number
+    userId: number,
+    voucherUUID?: string,
+    voucherCode?: string
   ) {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
@@ -264,11 +269,97 @@ export class SeatService {
         }
       }
 
+      const originalAmount = totalAmount;
+
       // ===============================
-      // 💰 Update total
+      //  voucher
       // ===============================
+      let discountAmount = 0;
+
+      const voucherIdentifier = voucherUUID || (voucherCode && voucherCode.trim());
+      if (voucherIdentifier) {
+        let voucher;
+        if (voucherUUID) {
+          voucher = await queryRunner.manager.findOneOrFail(Voucher, {
+            where: { UUID: voucherUUID },
+            lock: { mode: "pessimistic_write" },
+          });
+        } else {
+          voucher = await queryRunner.manager.findOneOrFail(Voucher, {
+            where: { code: voucherCode!.trim().toUpperCase() },
+            lock: { mode: "pessimistic_write" },
+          });
+        }
+
+        const now = new Date();
+
+        if (!voucher.isActive)
+          throw new Error("Voucher inactive");
+
+        if (now < voucher.startDate || now > voucher.endDate)
+          throw new Error("Voucher expired");
+
+        if (
+          voucher.usageLimit > 0 &&
+          voucher.usedCount >= voucher.usageLimit
+        )
+          throw new Error("Voucher exhausted");
+
+        if (
+          voucher.minOrderValue &&
+          totalAmount < Number(voucher.minOrderValue)
+        )
+          throw new Error("Order not eligible for voucher");
+
+        // per user check
+        const usageCount = await queryRunner.manager.count(VoucherUsage, {
+          where: {
+            voucherId: voucher.id,
+            userId,
+          },
+        });
+
+
+        if (
+          voucher.perUserLimit &&
+          usageCount >= voucher.perUserLimit
+        ) {
+          throw new Error("User exceeded voucher usage limit");
+        }
+
+
+        if (voucher.type === "PERCENTAGE") {
+          discountAmount = (totalAmount * Number(voucher.value)) / 100;
+
+          if (
+            voucher.maxDiscountAmount &&
+            discountAmount > Number(voucher.maxDiscountAmount)
+          ) {
+            discountAmount = Number(voucher.maxDiscountAmount);
+          }
+        } else {
+          discountAmount = Number(voucher.value);
+        }
+
+        totalAmount = Math.max(originalAmount - discountAmount, 0);
+
+        // 🔥 Increase used count
+        voucher.usedCount += 1;
+        await queryRunner.manager.save(voucher);
+
+        // 🔥 Save usage record
+        await queryRunner.manager.save(VoucherUsage, {
+          voucherId: voucher.id,
+          userId,
+        });
+
+
+        order.voucher = voucher; // nếu có relation
+      }
+      //Update total
       order.totalAmount = totalAmount;
       await queryRunner.manager.save(order);
+
 
       await queryRunner.commitTransaction();
 
@@ -281,7 +372,9 @@ export class SeatService {
       return {
         message: "Booking confirmed",
         orderUUID: order.UUID,
-        totalAmount,
+        originalAmount,
+        discountAmount,
+        finalAmount: totalAmount,
         seats: confirmedSeats,
         concessions: processedConcessions,
       };
@@ -295,19 +388,80 @@ export class SeatService {
       await queryRunner.release();
     }
   }
-  async getSeatsByHallId(hallId: number) {
-    const seatRepository = AppDataSource.getRepository(Seat);
 
+  // ===============================
+  // GET SEATS BY HALL ID (kèm trạng thái)
+
+
+  async getSeatsByHallId(hallId: number, showtimeUUID: string) {
+    const seatRepository = AppDataSource.getRepository(Seat);
+    const showtimeRepository = AppDataSource.getRepository(Showtime);
+
+    // 1. Kiểm tra showtime tồn tại
+    const showtime = await showtimeRepository.findOne({
+      where: { UUID: showtimeUUID },
+    });
+
+    if (!showtime) {
+      throw new Error("Showtime not found");
+    }
+
+    // 2. Kiểm tra showtime thuộc đúng hall
+    if (showtime.hallId !== hallId) {
+      throw new Error("Showtime does not belong to this hall");
+    }
+
+    // 3. Lấy tất cả ghế trong hall
     const seats = await seatRepository.find({
       where: { hall: { id: hallId } },
       order: { seatNumber: "ASC" },
     });
 
-    return seats.map((s) => ({
-      UUID: s.UUID,
-      seatNumber: s.seatNumber,
-      type: s.type,
-    }));
+    // 4. Lấy danh sách ghế đã bán (có Ticket)
+    const soldSeatIds = await AppDataSource.getRepository(Ticket)
+      .createQueryBuilder("ticket")
+      .select("ticket.seatId")
+      .where("ticket.showtimeId = :showtimeId", { showtimeId: showtime.id })
+      .getRawMany()
+      .then((rows) => rows.map((r) => r.ticket_seatId));
+
+    // 5. Lấy danh sách ghế đang hold (còn hạn)
+    const heldSeats = await AppDataSource.getRepository(SeatHold)
+      .createQueryBuilder("hold")
+      .select(["hold.seatId", "hold.expiresAt"])
+      .where("hold.showtimeId = :showtimeId", { showtimeId: showtime.id })
+      .andWhere("hold.expiresAt > NOW()")
+      .getRawMany();
+
+    const heldMap = new Map(
+      heldSeats.map((h) => [h.hold_seatId, h.hold_expiresAt])
+    );
+
+    // 6. Map status cho từng ghế
+    return seats.map((s) => {
+      let status: "available" | "held" | "sold" = "available";
+      let expiresAt: Date | null = null;
+
+      if (soldSeatIds.includes(s.id)) {
+        status = "sold";
+      } else if (heldMap.has(s.id)) {
+        status = "held";
+        expiresAt = heldMap.get(s.id) as Date;
+      }
+
+      const result: Record<string, unknown> = {
+        UUID: s.UUID,
+        seatNumber: s.seatNumber,
+        type: s.type,
+        status,
+      };
+
+      if (expiresAt) {
+        result.expiresAt = expiresAt;
+      }
+
+      return result;
+    });
   }
 
 

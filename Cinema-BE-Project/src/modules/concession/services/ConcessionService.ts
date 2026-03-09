@@ -1,5 +1,5 @@
-import { AppDataSource } from "../data-source";
-import { Concession } from "../modules/concession/models/Concession";
+import { AppDataSource } from "../../../data-source";
+import { Concession } from "../models/Concession";
 import { CreateConcessionDTO } from "../dtos/CreateConcession.dto";
 
 export class ConcessionService {
@@ -10,7 +10,13 @@ export class ConcessionService {
     }
 
     async getAll() {
-        return this.repo.find();
+        return this.repo.find({ order: { type: "ASC", name: "ASC" } });
+    }
+
+    async getById(id: number) {
+        const item = await this.repo.findOneBy({ id });
+        if (!item) throw new Error("Concession not found");
+        return item;
     }
 
     async update(id: number, data: Partial<CreateConcessionDTO>) {
@@ -24,5 +30,13 @@ export class ConcessionService {
         const item = await this.repo.findOneBy({ id });
         if (!item) throw new Error("Concession not found");
         return this.repo.remove(item);
+    }
+
+    async updateStock(id: number, quantity: number) {
+        const item = await this.repo.findOneBy({ id });
+        if (!item) throw new Error("Concession not found");
+        if (quantity < 0) throw new Error("Stock quantity cannot be negative");
+        item.stockQuantity = quantity;
+        return this.repo.save(item);
     }
 }

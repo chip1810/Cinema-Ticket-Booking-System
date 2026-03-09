@@ -45,7 +45,7 @@ export class SeatController {
         }
     }
 
-    // ✅ CONFIRM BOOKING
+    //  CONFIRM BOOKING
     async confirmBooking(req: AuthRequest, res: Response) {
 
         const dto = plainToInstance(ConfirmBookingDTO, req.body);
@@ -67,7 +67,9 @@ export class SeatController {
                 dto.showtimeUUID,
                 dto.seatUUIDs,
                 dto.concessions || [],
-                req.user.id
+                req.user.id,
+                dto.voucherUUID,
+                dto.voucherCode
             );
 
             return ApiResponse.success(res, result, "Booking confirmed");
@@ -80,19 +82,28 @@ export class SeatController {
     async getSeatsByHallId(req: Request, res: Response) {
         try {
             const hallId = Number(req.params.hallId);
+            const showtimeUUID = req.body.showtimeUUID as string;
 
             if (isNaN(hallId)) {
                 return ApiResponse.error(res, "Invalid hallId", 400);
             }
 
-            const seats = await seatService.getSeatsByHallId(hallId);
+            if (!showtimeUUID || typeof showtimeUUID !== "string" || showtimeUUID.trim() === "") {
+                return ApiResponse.error(res, "showtimeUUID is required", 400);
+            }
+
+            const seats = await seatService.getSeatsByHallId(hallId, showtimeUUID.trim());
 
             return ApiResponse.success(res, seats, "Seats fetched successfully");
         } catch (error) {
             const message =
                 error instanceof Error ? error.message : "Internal Server Error";
 
-            return ApiResponse.error(res, message, 500);
+            const statusCode = message.includes("not found") || message.includes("does not belong")
+                ? 400
+                : 500;
+
+            return ApiResponse.error(res, message, statusCode);
         }
     }
 

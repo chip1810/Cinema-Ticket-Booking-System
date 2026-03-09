@@ -44,4 +44,12 @@ export class Ticket {
 
     @CreateDateColumn({ type: "timestamptz" })
     createdAt!: Date;
+    
+    @Column()
+    userId!: number;
+
+    @ManyToOne(() => User)
+    @JoinColumn({ name: "userId" })
+    user!: User;
+
 }

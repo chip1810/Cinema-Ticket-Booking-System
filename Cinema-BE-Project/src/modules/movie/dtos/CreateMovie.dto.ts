@@ -22,8 +22,12 @@ export class CreateMovieDTO {
     @IsUrl()
     posterUrl?: string;
 
+    @IsOptional()
+    @IsUrl()
+    trailerUrl?: string;
+
     @IsNotEmpty()
-    @IsEnum(["Now Showing", "Coming Soon"])
+    @IsEnum(["Now Showing", "Coming Soon", "Stopped"])
     status!: string;
 
     @IsNotEmpty()
