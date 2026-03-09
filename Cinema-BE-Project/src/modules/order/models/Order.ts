@@ -6,10 +6,12 @@ import {
   OneToMany,
   CreateDateColumn,
   Generated,
+  JoinColumn,
 } from "typeorm";
 import { User } from "../../auth/models/User";
 import { Ticket } from "../../ticket/models/Ticket";
 import { OrderItem } from "../../order_item/models/OrderItem";
+import { Voucher } from "../../voucher/models/Voucher";
 
 export enum OrderStatus {
   PENDING = "PENDING",
@@ -50,4 +52,9 @@ export class Order {
 
   @CreateDateColumn()
   createdAt!: Date;
+
+  @ManyToOne(() => Voucher, { nullable: true })
+  @JoinColumn({ name: "voucherId" })
+  voucher?: Voucher;
+
 }

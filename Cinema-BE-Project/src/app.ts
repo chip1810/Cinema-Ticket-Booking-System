@@ -11,15 +11,19 @@ import { MovieController } from "./modules/movie/controllers/MovieController";
 import { ShowtimeController } from "./controllers/ShowtimeController";
 import { ConcessionController } from "./controllers/ConcessionController";
 import { PricingController } from "./controllers/PricingController";
+// Routes
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
 import adminRoutes from "./modules/admin/routes/admin.routes";
+import showtimeRoutes from "./modules/showtime/routes/showtimeRoutes";
+import voucherRoutes from "./modules/voucher/routes/voucherRoutes";
+
 
 // Seed entities
 import { Hall } from "./modules/hall/models/Hall";
 import { Genre } from "./modules/genre/models/Genre";
 // Routes
-import showtimeRoutes from "./modules/showtime/routes/showtimeRoutes";
+
 
 dotenv.config();
 
@@ -67,6 +71,7 @@ app.post("/api/pricing/calculate", (req, res) => pricing.calculate(req, res));
 //Staff Routes
 app.use("/api/staff", staffRouter);
 app.use("/api/seat", seatRouter)
+app.use("/api/vouchers", voucherRoutes);
 
 // --- Seed Route (Dev only) ---
 app.post("/api/seed", async (req: Request, res: Response) => {

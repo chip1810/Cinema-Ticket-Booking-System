@@ -14,6 +14,8 @@ import { PricingRule } from "./modules/pricing_rule/models/PricingRule";
 import { Ticket } from "./modules/ticket/models/Ticket";
 import { Order } from "./modules/order/models/Order";
 import { OrderItem } from "./modules/order_item/models/OrderItem";
+import { Voucher } from "./modules/voucher/models/Voucher";
+import { VoucherUsage } from "./modules/voucher/models/VoucherUsage";
 
 dotenv.config();
 
@@ -23,7 +25,7 @@ export const AppDataSource = new DataSource({
     ssl: {
         rejectUnauthorized: false,
     },
-    synchronize: false,
-    logging: false,
-    entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem],
+    synchronize: true,
+    logging: true,
+    entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem, Voucher, VoucherUsage],
 });
