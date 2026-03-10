@@ -5,7 +5,7 @@ export default function ShowtimeSection({ showtimes }) {
   const grouped = {};
 
   showtimes?.forEach((s) => {
-    const date = s.startTime.split("T")[0];
+    const date = (s.startTime || '').split("T")[0];
 
     if (!grouped[date]) grouped[date] = [];
     grouped[date].push(s);
