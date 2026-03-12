@@ -1,6 +1,6 @@
-import { IsNotEmpty, IsString, IsNumber, IsEnum, IsOptional, IsUrl, Min } from "class-validator";
+import { IsNotEmpty, IsString, IsNumber, IsEnum, IsOptional, Min } from "class-validator";
 import { Type } from "class-transformer";
-import { ConcessionType } from "../modules/concession/models/Concession";
+import { ConcessionType } from "../models/enums/ConcessionType";
 
 export class CreateConcessionDTO {
     @IsNotEmpty()
@@ -24,6 +24,6 @@ export class CreateConcessionDTO {
     stockQuantity!: number;
 
     @IsOptional()
-    @IsUrl()
+    @IsString()
     imageUrl?: string;
 }

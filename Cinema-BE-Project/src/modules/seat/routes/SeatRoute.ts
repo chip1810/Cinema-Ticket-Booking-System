@@ -7,7 +7,7 @@ const controller = new SeatController();
 
 router.post("/hold", authenticate, controller.holdSeats);
 router.post("/confirm", authenticate, controller.confirmBooking);
-router.get("/halls/:hallId/seats", controller.getSeatsByHallId);
+router.post("/halls/:hallId/seats", controller.getSeatsByHallId);
 
 
 export default router;

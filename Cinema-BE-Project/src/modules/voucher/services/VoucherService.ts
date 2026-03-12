@@ -52,6 +52,18 @@ export class VoucherService {
         return voucher;
     }
 
+    // ================= GET BY CODE =================
+    async findByCode(code: string) {
+        const voucher = await this.voucherRepo.findOne({
+            where: { code: code.trim().toUpperCase() },
+        });
+
+        if (!voucher) {
+            throw new Error("Voucher not found");
+        }
+
+        return voucher;
+    }
     // ================= UPDATE =================
     async update(uuid: string, dto: UpdateVoucherDTO) {
         const voucher = await this.findByUUID(uuid);
@@ -83,7 +95,15 @@ export class VoucherService {
 
     // ================= APPLY (preview only) =================
     async apply(dto: ApplyVoucherDTO, userId: number) {
-        const voucher = await this.findByUUID(dto.voucherUUID);
+        let voucher;
+
+        if (dto.voucherUUID) {
+            voucher = await this.findByUUID(dto.voucherUUID);
+        } else if (dto.code && dto.code.trim()) {
+            voucher = await this.findByCode(dto.code);
+        } else {
+            throw new Error("Cần có voucherUUID hoặc code");
+        }
 
         const now = new Date();
 

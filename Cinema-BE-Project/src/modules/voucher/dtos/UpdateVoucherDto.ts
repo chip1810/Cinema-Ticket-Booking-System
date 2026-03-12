@@ -49,4 +49,9 @@ export class UpdateVoucherDTO {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  perUserLimit?: number;
 }
