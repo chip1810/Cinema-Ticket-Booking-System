@@ -36,7 +36,11 @@ export class Movie {
   posterUrl?: string;
 
   @Column({ nullable: true })
+<<<<<<< HEAD
   trailerUrl?: string;
+=======
+  bannerUrl?: string;
+>>>>>>> origin/BE/feat-Cinema-Staff
 
   @Column("decimal", { precision: 2, scale: 1, nullable: true })
   rating?: number;

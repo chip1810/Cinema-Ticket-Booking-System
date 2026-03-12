@@ -48,4 +48,23 @@ export const showtimeController = {
             return ApiResponse.error(res, message, 500);
         }
     },
+
+    async getNearest(req: Request, res: Response) {
+        try {
+            const showtimes = await showtimeService.getNearestShowtimes();
+
+            return ApiResponse.success(
+                res,
+                showtimes,
+                "Nearest showtimes fetched successfully"
+            );
+        } catch (error) {
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : "Internal Server Error";
+
+            return ApiResponse.error(res, message, 500);
+        }
+    },
 };
