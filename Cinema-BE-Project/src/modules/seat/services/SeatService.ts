@@ -12,6 +12,7 @@ import { OrderItem } from "../../order_item/models/OrderItem";
 import { Voucher } from "../../voucher/models/Voucher";
 import { VoucherUsage } from "../../voucher/models/VoucherUsage";
 
+
 export class SeatService {
   /**
    * HOLD SEATS (giữ ghế 5 phút)
@@ -393,11 +394,11 @@ export class SeatService {
   // GET SEATS BY HALL ID (kèm trạng thái)
 
 
-  async getSeatsByHallId(hallId: number, showtimeUUID: string) {
+  async getSeatsByShowtime(showtimeUUID: string) {
     const seatRepository = AppDataSource.getRepository(Seat);
     const showtimeRepository = AppDataSource.getRepository(Showtime);
 
-    // 1. Kiểm tra showtime tồn tại
+    // 1. Tìm showtime theo UUID
     const showtime = await showtimeRepository.findOne({
       where: { UUID: showtimeUUID },
     });
@@ -406,18 +407,15 @@ export class SeatService {
       throw new Error("Showtime not found");
     }
 
-    // 2. Kiểm tra showtime thuộc đúng hall
-    if (showtime.hallId !== hallId) {
-      throw new Error("Showtime does not belong to this hall");
-    }
+    const hallId = showtime.hallId;
 
-    // 3. Lấy tất cả ghế trong hall
+    // 2. Lấy tất cả ghế trong hall của showtime
     const seats = await seatRepository.find({
       where: { hall: { id: hallId } },
       order: { seatNumber: "ASC" },
     });
 
-    // 4. Lấy danh sách ghế đã bán (có Ticket)
+    // 3. Lấy danh sách ghế đã bán (Ticket)
     const soldSeatIds = await AppDataSource.getRepository(Ticket)
       .createQueryBuilder("ticket")
       .select("ticket.seatId")
@@ -425,7 +423,7 @@ export class SeatService {
       .getRawMany()
       .then((rows) => rows.map((r) => r.ticket_seatId));
 
-    // 5. Lấy danh sách ghế đang hold (còn hạn)
+    // 4. Lấy danh sách ghế đang hold (còn hạn)
     const heldSeats = await AppDataSource.getRepository(SeatHold)
       .createQueryBuilder("hold")
       .select(["hold.seatId", "hold.expiresAt"])
@@ -437,7 +435,7 @@ export class SeatService {
       heldSeats.map((h) => [h.hold_seatId, h.hold_expiresAt])
     );
 
-    // 6. Map status cho từng ghế
+    // 5. Gán status cho từng ghế
     return seats.map((s) => {
       let status: "available" | "held" | "sold" = "available";
       let expiresAt: Date | null = null;
@@ -462,6 +460,177 @@ export class SeatService {
 
       return result;
     });
+  }
+  /**
+ * CHECKOUT PREVIEW – Tính tổng tiền, không tạo Order
+ */
+  async checkoutPreview(
+    showtimeUUID: string,
+    seatUUIDs: string[],
+    concessions: { concessionUUID: string; quantity: number }[],
+    userId: number,
+    voucherUUID?: string,
+    voucherCode?: string
+  ) {
+    const showtimeRepo = AppDataSource.getRepository(Showtime);
+    const seatRepo = AppDataSource.getRepository(Seat);
+    const holdRepo = AppDataSource.getRepository(SeatHold);
+    const pricingRepo = AppDataSource.getRepository(PricingRule);
+    const concessionRepo = AppDataSource.getRepository(Concession);
+    const voucherRepo = AppDataSource.getRepository(Voucher);
+    const usageRepo = AppDataSource.getRepository(VoucherUsage);
+
+    const showtime = await showtimeRepo.findOne({
+      where: { UUID: showtimeUUID },
+      relations: ["movie", "hall"],
+    });
+
+    if (!showtime) throw new Error("Showtime not found");
+
+    const seats = await seatRepo.find({
+      where: seatUUIDs.map((uuid) => ({ UUID: uuid })),
+    });
+
+    if (seats.length !== seatUUIDs.length) {
+      throw new Error("Some seats not found");
+    }
+
+    const seatDetails: { seatNumber: string; type: string; price: number }[] = [];
+    let seatTotal = 0;
+
+    for (const seat of seats) {
+      if (seat.hallId !== showtime.hallId) {
+        throw new Error(`Seat ${seat.seatNumber} not in this showtime's hall`);
+      }
+
+      const hold = await holdRepo
+        .createQueryBuilder("hold")
+        .where("hold.showtimeId = :showtimeId", { showtimeId: showtime.id })
+        .andWhere("hold.seatId = :seatId", { seatId: seat.id })
+        .andWhere("hold.userId = :userId", { userId })
+        .andWhere("hold.expiresAt > NOW()")
+        .getOne();
+
+      if (!hold) {
+        throw new Error(`Seat ${seat.seatNumber} not held or expired`);
+      }
+
+      const pricingRule = await pricingRepo.findOne({
+        where: {
+          showtimeId: showtime.id,
+          seatType: seat.type,
+        },
+      });
+
+      if (!pricingRule) {
+        throw new Error(`Chưa cấu hình giá cho loại ghế ${seat.type}`);
+      }
+
+      const price = Number(pricingRule.price);
+      seatDetails.push({ seatNumber: seat.seatNumber, type: seat.type, price });
+      seatTotal += price;
+    }
+
+    const concessionDetails: {
+      name: string;
+      quantity: number;
+      price: number;
+      subtotal: number;
+    }[] = [];
+    let concessionTotal = 0;
+
+    if (concessions && concessions.length > 0) {
+      for (const item of concessions) {
+        const concession = await concessionRepo.findOne({
+          where: { UUID: item.concessionUUID },
+        });
+
+        if (!concession) throw new Error(`Concession ${item.concessionUUID} not found`);
+        if (item.quantity <= 0) throw new Error("Invalid concession quantity");
+        if (concession.stockQuantity < item.quantity) {
+          throw new Error(`${concession.name} out of stock`);
+        }
+
+        const price = Number(concession.price);
+        const subtotal = price * item.quantity;
+        concessionDetails.push({
+          name: concession.name,
+          quantity: item.quantity,
+          price,
+          subtotal,
+        });
+        concessionTotal += subtotal;
+      }
+    }
+
+    let subtotal = seatTotal + concessionTotal;
+    let discountAmount = 0;
+
+    const voucherIdentifier = voucherUUID || (voucherCode && voucherCode.trim());
+    if (voucherIdentifier && subtotal > 0) {
+      let voucher;
+      if (voucherUUID) {
+        voucher = await voucherRepo.findOne({ where: { UUID: voucherUUID } });
+      } else {
+        voucher = await voucherRepo.findOne({
+          where: { code: voucherCode!.trim().toUpperCase() },
+        });
+      }
+
+      if (!voucher) throw new Error("Voucher not found");
+
+      const now = new Date();
+      if (!voucher.isActive) throw new Error("Voucher inactive");
+      if (now < voucher.startDate || now > voucher.endDate) {
+        throw new Error("Voucher expired");
+      }
+      if (voucher.usageLimit > 0 && voucher.usedCount >= voucher.usageLimit) {
+        throw new Error("Voucher usage exceeded");
+      }
+
+      const usageCount = await usageRepo.count({
+        where: { voucherId: voucher.id, userId },
+      });
+      if (usageCount >= voucher.perUserLimit) {
+        throw new Error("User exceeded voucher usage limit");
+      }
+      if (voucher.minOrderValue && subtotal < Number(voucher.minOrderValue)) {
+        throw new Error("Order value not enough for voucher");
+      }
+
+      if (voucher.type === "PERCENTAGE") {
+        discountAmount = (subtotal * Number(voucher.value)) / 100;
+        if (voucher.maxDiscountAmount && discountAmount > Number(voucher.maxDiscountAmount)) {
+          discountAmount = Number(voucher.maxDiscountAmount);
+        }
+      } else {
+        discountAmount = Number(voucher.value);
+      }
+    }
+
+    const totalAmount = Math.max(subtotal - discountAmount, 0);
+
+    const firstHold = await holdRepo.findOne({
+      where: { showtimeId: showtime.id, userId },
+      select: ["expiresAt"],
+    });
+
+    return {
+      showtime: {
+        UUID: showtime.UUID,
+        startTime: showtime.startTime,
+        movie: showtime.movie
+          ? { title: showtime.movie.title, duration: showtime.movie.duration }
+          : null,
+        hall: showtime.hall ? { name: showtime.hall.name } : null,
+      },
+      seats: seatDetails,
+      concessions: concessionDetails,
+      subtotal,
+      discountAmount,
+      totalAmount,
+      expiresAt: firstHold?.expiresAt ?? null,
+    };
   }
 
 
