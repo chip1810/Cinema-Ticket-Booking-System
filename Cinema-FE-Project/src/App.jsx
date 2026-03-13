@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Footer from './components/landingPage/Footer';
 import MovieDetail from './pages/MovieDetail';
 import { AuthProvider } from './context/AuthContext';
+import SeatSelection from './pages/SeatSelection';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/movies/:uuid" element={<MovieDetail />} />
+            <Route path="/showtime/:uuid" element={<SeatSelection />} />
           </Routes>
         </main>
 
