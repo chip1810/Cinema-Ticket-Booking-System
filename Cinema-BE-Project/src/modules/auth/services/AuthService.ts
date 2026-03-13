@@ -12,7 +12,7 @@ export class AuthService {
 
     async register(data: RegisterDTO) {
         const existing = await this.userRepo.findOneBy({ email: data.email });
-        if (existing) throw new Error("Email already exists");
+        if (existing) throw new Error("Email đã tồn tại");
 
         const user = this.userRepo.create({
             email: data.email,
@@ -26,17 +26,31 @@ export class AuthService {
 
     async login(data: LoginDTO) {
         const user = await this.userRepo.findOneBy({ email: data.email });
-        if (!user || !(await bcrypt.compare(data.password, user.password))) {
-            throw new Error("Invalid credentials");
+
+        if (!user) {
+            throw new Error("Thông tin đăng nhập không hợp lệ");
         }
-        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRE });
+
+        const isMatch = await bcrypt.compare(data.password, user.password);
+
+        if (!isMatch) {
+            throw new Error("Thông tin đăng nhập không hợp lệ");
+        }
+
+        const token = jwt.sign(
+            { id: user.id, role: user.role },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRE }
+        );
+
         const { password, ...userInfo } = user;
+
         return { user: userInfo, token };
     }
 
     async forgotPassword(email: string) {
         const user = await this.userRepo.findOneBy({ email });
-        if (!user) throw new Error("User not found");
+        if (!user) throw new Error("Người dùng không tồn tại");
 
         const resetToken = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
         user.resetPasswordOTP = resetToken;
@@ -46,25 +60,25 @@ export class AuthService {
         // In production, send email here with the OTP
         console.log(`[DEV] Reset OTP for ${email}: ${resetToken}`);
 
-        return { message: "Reset OTP sent to email" };
+        return { message: "OTP đang được gửi tới bạn" };
     }
 
     async resetPassword(data: ResetPasswordDTO) {
         const user = await this.userRepo.findOneBy({ email: data.email });
-        if (!user) throw new Error("User not found");
+        if (!user) throw new Error("Người dùng không tồn tại");
 
         if (
             user.resetPasswordOTP !== data.token ||
             !user.resetPasswordExpires ||
             user.resetPasswordExpires < new Date()
         ) {
-            throw new Error("Invalid or expired OTP");
+            throw new Error("OTP không hợp lệ hoặc đã hết hạn");
         }
 
         user.password = await bcrypt.hash(data.newPassword, 10);
         user.resetPasswordOTP = undefined;
         user.resetPasswordExpires = undefined;
         await this.userRepo.save(user);
-        return { message: "Password reset successful" };
+        return { message: "Mật khẩu đã được cập nhật" };
     }
 }

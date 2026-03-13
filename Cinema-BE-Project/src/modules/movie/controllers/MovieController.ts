@@ -49,6 +49,19 @@ export class MovieController {
         }
     }
 
+    async getByUUID(req: Request, res: Response) {
+        try {
+            const uuid = req.params.uuid as string;
+
+            const movie = await movieService.getMovieByUUID(uuid);
+
+            return ApiResponse.success(res, movie, "Movie fetched successfully");
+
+        } catch (e: any) {
+            return ApiResponse.error(res, e.message, 404);
+        }
+    }
+
     async update(req: Request, res: Response) {
         try {
             const movie = await movieService.updateMovie(

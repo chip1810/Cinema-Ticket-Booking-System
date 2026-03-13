@@ -641,5 +641,69 @@ export class SeatService {
     };
   }
 
+  async getSeatsByShowtime2(showtimeUUID: string) {
+    const showtime = await AppDataSource.getRepository(Showtime).findOne({
+      where: { UUID: showtimeUUID },
+    });
+
+    if (!showtime) {
+      throw new Error("Showtime not found");
+    }
+
+    const now = new Date();
+
+    const rows = await AppDataSource.getRepository(Seat)
+      .createQueryBuilder("seat")
+
+      // SOLD
+      .leftJoin(
+        Ticket,
+        "ticket",
+        "ticket.seatId = seat.id AND ticket.showtimeId = :showtimeId",
+        { showtimeId: showtime.id }
+      )
+
+      // HELD
+      .leftJoin(
+        SeatHold,
+        "hold",
+        "hold.seatId = seat.id AND hold.showtimeId = :showtimeId AND hold.expiresAt > :now",
+        { showtimeId: showtime.id, now }
+      )
+
+      .select([
+        "seat.UUID as uuid",
+        "seat.seatNumber as seatNumber",
+        "seat.type as type",
+        "ticket.id as sold",
+        "hold.expiresAt as expiresAt",
+      ])
+
+      .where("seat.hallId = :hallId", { hallId: showtime.hallId })
+
+      .orderBy("seat.seatNumber", "ASC")
+
+      .getRawMany();
+
+    const seats = rows.map((r) => {
+      const sold = !!r.sold;
+      const expiresAt = r.expiresat ?? r.expiresAt ?? null;
+
+      let status: "available" | "held" | "sold" = "available";
+
+      if (sold) status = "sold";
+      else if (expiresAt) status = "held";
+
+      return {
+        UUID: r.uuid,
+        seatNumber: r.seatnumber ?? r.seatNumber,
+        type: r.type,
+        status,
+        expiresAt,
+      };
+    });
+
+    return seats;
+  }
 
 }

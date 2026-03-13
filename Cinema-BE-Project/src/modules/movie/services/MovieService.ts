@@ -1,12 +1,19 @@
 import { AppDataSource } from "../../../data-source";
 import { Movie } from "../models/Movie";
 import { Genre } from "../../genre/models/Genre";
+import { Seat } from "../../seat/models/Seat";
 import { CreateMovieDTO } from "../dtos/CreateMovie.dto";
-import { In } from "typeorm";
+import { In, MoreThan } from "typeorm";
+import { Ticket } from "../../ticket/models/Ticket";
+import { SeatHold } from "../../seat/models/SeatHold";
+
 
 export class MovieService {
     private movieRepo = AppDataSource.getRepository(Movie);
     private genreRepo = AppDataSource.getRepository(Genre);
+    private seatRepo = AppDataSource.getRepository(Seat);
+    private ticketRepo = AppDataSource.getRepository(Ticket);
+    private seatHoldRepo = AppDataSource.getRepository(SeatHold)
 
     private async findGenres(genreIds: number[]) {
         const genres = await this.genreRepo.findBy({ id: In(genreIds) });
@@ -39,6 +46,59 @@ export class MovieService {
         return movie;
     }
 
+    async getMovieByUUID(uuid: string) {
+        const movie = await this.movieRepo.findOne({
+            where: { UUID: uuid },
+            relations: [
+                "genres",
+                "showtimes",
+                "showtimes.hall"
+            ]
+        });
+
+        if (!movie) throw new Error("Movie not found");
+
+        const now = new Date();
+
+        const showtimes = await Promise.all(
+            movie.showtimes.map(async (s) => {
+
+                const totalSeats = await this.seatRepo.count({
+                    where: { hallId: s.hallId }
+                });
+
+                const soldSeats = await this.ticketRepo.count({
+                    where: { showtimeId: s.id }
+                });
+
+                const holdingSeats = await this.seatHoldRepo.count({
+                    where: {
+                        showtimeId: s.id,
+                        expiresAt: MoreThan(now)
+                    }
+                });
+
+                const availableSeats = totalSeats - soldSeats - holdingSeats;
+
+                return {
+                    UUID: s.UUID,
+                    startTime: s.startTime,
+                    endTime: s.endTime,
+                    hall: {
+                        name: s.hall.name,
+                        capacity: s.hall.capacity
+                    },
+                    totalSeats,
+                    availableSeats
+                };
+            })
+        );
+
+        return {
+            ...movie,
+            showtimes
+        };
+    }
     async updateMovie(id: number, data: Partial<CreateMovieDTO>) {
         const movie = await this.getMovieById(id);
         if (data.genreIds) movie.genres = await this.findGenres(data.genreIds);

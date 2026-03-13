@@ -134,4 +134,30 @@ export class SeatController {
         }
     }
 
+    async getSeatsByShowtime2(req: Request, res: Response) {
+        try {
+
+            const showtimeUUID = req.params.showtimeUUID;
+
+            if (!showtimeUUID || typeof showtimeUUID !== "string") {
+                return ApiResponse.error(res, "Invalid showtimeUUID", 400);
+            }
+
+            const seats = await seatService.getSeatsByShowtime(showtimeUUID.trim());
+
+            return ApiResponse.success(res, seats, "Seats fetched successfully");
+
+        } catch (error) {
+
+            const message =
+                error instanceof Error ? error.message : "Internal Server Error";
+
+            const statusCode = message.includes("not found") ? 404 : 500;
+
+            return ApiResponse.error(res, message, statusCode);
+        }
+    }
+
+
+
 }

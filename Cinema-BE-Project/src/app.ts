@@ -17,11 +17,12 @@ import { BannerController } from "./controllers/BannerController";
 import { DashboardController } from "./controllers/DashboardController";
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
+import adminRoutes from "./modules/admin/routes/admin.routes";
 import showtimeRoutes from "./modules/showtime/routes/showtimeRoutes";
 import voucherRoutes from "./modules/voucher/routes/voucherRoutes";
 import concessionRoutes from "./modules/concession/routes/concessionRoutes";
-import adminRoutes from "./modules/admin/routes/admin.routes";
 import orderRoutes from "./modules/order/routes/orderRoutes";
+
 
 // Seed entities
 import { Hall } from "./modules/hall/models/Hall";
@@ -66,6 +67,7 @@ app.get("/api/movies/:id", (req, res) => movie.getById(req, res));
 app.post("/api/movies", (req, res) => movie.create(req, res));
 app.put("/api/movies/:id", (req, res) => movie.update(req, res));
 app.delete("/api/movies/:id", (req, res) => movie.delete(req, res));
+app.get("/api/movies/uuid/:uuid", (req, res) => movie.getByUUID(req, res));
 
 // --- Manager Showtime Routes (Create / Update / Cancel) ---
 app.get("/api/showtimes/:id", (req, res) => showtime.getById(req, res));
