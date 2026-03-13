@@ -395,10 +395,11 @@ export class SeatService {
 
 
   async getSeatsByShowtime(showtimeUUID: string) {
+
     const seatRepository = AppDataSource.getRepository(Seat);
     const showtimeRepository = AppDataSource.getRepository(Showtime);
 
-    // 1. Tìm showtime theo UUID
+    // tìm showtime
     const showtime = await showtimeRepository.findOne({
       where: { UUID: showtimeUUID },
     });
@@ -407,60 +408,67 @@ export class SeatService {
       throw new Error("Showtime not found");
     }
 
-    const hallId = showtime.hallId;
+    const seats = await seatRepository
+      .createQueryBuilder("seat")
 
-    // 2. Lấy tất cả ghế trong hall của showtime
-    const seats = await seatRepository.find({
-      where: { hall: { id: hallId } },
-      order: { seatNumber: "ASC" },
-    });
+      // join hall
+      .innerJoin("seat.hall", "hall")
 
-    // 3. Lấy danh sách ghế đã bán (Ticket)
-    const soldSeatIds = await AppDataSource.getRepository(Ticket)
-      .createQueryBuilder("ticket")
-      .select("ticket.seatId")
-      .where("ticket.showtimeId = :showtimeId", { showtimeId: showtime.id })
-      .getRawMany()
-      .then((rows) => rows.map((r) => r.ticket_seatId));
+      // join ticket (ghế đã bán)
+      .leftJoin(
+        Ticket,
+        "ticket",
+        "ticket.seatId = seat.id AND ticket.showtimeId = :showtimeId",
+        { showtimeId: showtime.id }
+      )
 
-    // 4. Lấy danh sách ghế đang hold (còn hạn)
-    const heldSeats = await AppDataSource.getRepository(SeatHold)
-      .createQueryBuilder("hold")
-      .select(["hold.seatId", "hold.expiresAt"])
-      .where("hold.showtimeId = :showtimeId", { showtimeId: showtime.id })
-      .andWhere("hold.expiresAt > NOW()")
+      // join seat hold (ghế đang giữ)
+      .leftJoin(
+        SeatHold,
+        "hold",
+        "hold.seatId = seat.id AND hold.showtimeId = :showtimeId AND hold.expiresAt > NOW()",
+        { showtimeId: showtime.id }
+      )
+
+      .where("hall.id = :hallId", { hallId: showtime.hallId })
+
+      .select([
+        "seat.UUID as UUID",
+        "seat.seatNumber as seatNumber",
+        "seat.type as type",
+        "ticket.id as ticketId",
+        "hold.expiresAt as expiresAt",
+      ])
+
+      .orderBy("seat.seatNumber", "ASC")
+
       .getRawMany();
 
-    const heldMap = new Map(
-      heldSeats.map((h) => [h.hold_seatId, h.hold_expiresAt])
-    );
-
-    // 5. Gán status cho từng ghế
     return seats.map((s) => {
-      let status: "available" | "held" | "sold" = "available";
-      let expiresAt: Date | null = null;
 
-      if (soldSeatIds.includes(s.id)) {
+      let status: "available" | "held" | "sold" = "available";
+
+      if (s.ticketId) {
         status = "sold";
-      } else if (heldMap.has(s.id)) {
+      } else if (s.expiresAt) {
         status = "held";
-        expiresAt = heldMap.get(s.id) as Date;
       }
 
-      const result: Record<string, unknown> = {
+      const result: any = {
         UUID: s.UUID,
         seatNumber: s.seatNumber,
         type: s.type,
         status,
       };
 
-      if (expiresAt) {
-        result.expiresAt = expiresAt;
+      if (s.expiresAt) {
+        result.expiresAt = s.expiresAt;
       }
 
       return result;
     });
   }
+
   /**
  * CHECKOUT PREVIEW – Tính tổng tiền, không tạo Order
  */
