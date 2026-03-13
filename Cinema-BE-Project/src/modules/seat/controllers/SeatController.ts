@@ -113,29 +113,6 @@ export class SeatController {
 
     async getSeatsByShowtime(req: Request, res: Response) {
         try {
-            const showtimeUUID = (req.body.showtimeUUID as string | undefined)?.trim();
-
-            if (!showtimeUUID) {
-                return ApiResponse.error(res, "showtimeUUID is required", 400);
-            }
-
-            const seats = await seatService.getSeatsByShowtime(showtimeUUID);
-
-            return ApiResponse.success(res, seats, "Seats fetched successfully");
-        } catch (error) {
-            const message =
-                error instanceof Error ? error.message : "Internal Server Error";
-
-            const statusCode = message.includes("not found") || message.includes("does not belong")
-                ? 400
-                : 500;
-
-            return ApiResponse.error(res, message, statusCode);
-        }
-    }
-
-    async getSeatsByShowtime2(req: Request, res: Response) {
-        try {
 
             const showtimeUUID = req.params.showtimeUUID;
 

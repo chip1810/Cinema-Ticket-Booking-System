@@ -108,8 +108,9 @@ export class SeatService {
     }
 
     // 🔥 Emit sau khi transaction hoàn toàn xong
-    getIO().to(showtimeUUID).emit("seat-held", {
-      seatUUIDs,
+    getIO().to(showtimeUUID).emit("seat-status-updated", {
+      seatUUIDs, // Gửi mảng UUIDs
+      status: "held",
       expiresAt: result.expiresAt,
     });
 
@@ -366,8 +367,9 @@ export class SeatService {
 
       // 🔥 Realtime emit
       const io = getIO();
-      io.to(showtimeUUID).emit("seat-sold", {
+      getIO().to(showtimeUUID).emit("seat-status-updated", {
         seatUUIDs: confirmedSeats,
+        status: "sold",
       });
 
       return {
@@ -390,77 +392,6 @@ export class SeatService {
     }
   }
 
-  // ===============================
-  // GET SEATS BY HALL ID (kèm trạng thái)
-
-
-  async getSeatsByShowtime(showtimeUUID: string) {
-    const seatRepository = AppDataSource.getRepository(Seat);
-    const showtimeRepository = AppDataSource.getRepository(Showtime);
-
-    // 1. Tìm showtime theo UUID
-    const showtime = await showtimeRepository.findOne({
-      where: { UUID: showtimeUUID },
-    });
-
-    if (!showtime) {
-      throw new Error("Showtime not found");
-    }
-
-    const hallId = showtime.hallId;
-
-    // 2. Lấy tất cả ghế trong hall của showtime
-    const seats = await seatRepository.find({
-      where: { hall: { id: hallId } },
-      order: { seatNumber: "ASC" },
-    });
-
-    // 3. Lấy danh sách ghế đã bán (Ticket)
-    const soldSeatIds = await AppDataSource.getRepository(Ticket)
-      .createQueryBuilder("ticket")
-      .select("ticket.seatId")
-      .where("ticket.showtimeId = :showtimeId", { showtimeId: showtime.id })
-      .getRawMany()
-      .then((rows) => rows.map((r) => r.ticket_seatId));
-
-    // 4. Lấy danh sách ghế đang hold (còn hạn)
-    const heldSeats = await AppDataSource.getRepository(SeatHold)
-      .createQueryBuilder("hold")
-      .select(["hold.seatId", "hold.expiresAt"])
-      .where("hold.showtimeId = :showtimeId", { showtimeId: showtime.id })
-      .andWhere("hold.expiresAt > NOW()")
-      .getRawMany();
-
-    const heldMap = new Map(
-      heldSeats.map((h) => [h.hold_seatId, h.hold_expiresAt])
-    );
-
-    // 5. Gán status cho từng ghế
-    return seats.map((s) => {
-      let status: "available" | "held" | "sold" = "available";
-      let expiresAt: Date | null = null;
-
-      if (soldSeatIds.includes(s.id)) {
-        status = "sold";
-      } else if (heldMap.has(s.id)) {
-        status = "held";
-        expiresAt = heldMap.get(s.id) as Date;
-      }
-
-      const result: Record<string, unknown> = {
-        UUID: s.UUID,
-        seatNumber: s.seatNumber,
-        type: s.type,
-        status,
-      };
-
-      if (expiresAt) {
-        result.expiresAt = expiresAt;
-      }
-
-      return result;
-    });
-  }
   /**
  * CHECKOUT PREVIEW – Tính tổng tiền, không tạo Order
  */
@@ -632,11 +563,19 @@ export class SeatService {
       expiresAt: firstHold?.expiresAt ?? null,
     };
   }
+  async getSeatsByShowtime(showtimeUUID: string) {
 
-  async getSeatsByShowtime2(showtimeUUID: string) {
-    const showtime = await AppDataSource.getRepository(Showtime).findOne({
-      where: { UUID: showtimeUUID },
-    });
+    const showtimeRepository = AppDataSource.getRepository(Showtime);
+    const seatRepository = AppDataSource.getRepository(Seat);
+    const pricingRepository = AppDataSource.getRepository(PricingRule);
+
+    // 1️⃣ Lấy showtime + movie + hall
+    const showtime = await showtimeRepository
+      .createQueryBuilder("showtime")
+      .leftJoinAndSelect("showtime.movie", "movie")
+      .leftJoinAndSelect("showtime.hall", "hall")
+      .where("showtime.UUID = :uuid", { uuid: showtimeUUID })
+      .getOne();
 
     if (!showtime) {
       throw new Error("Showtime not found");
@@ -644,7 +583,8 @@ export class SeatService {
 
     const now = new Date();
 
-    const rows = await AppDataSource.getRepository(Seat)
+    // 2️⃣ Query seats + status (sold / held)
+    const rows = await seatRepository
       .createQueryBuilder("seat")
 
       // SOLD
@@ -695,7 +635,40 @@ export class SeatService {
       };
     });
 
-    return seats;
+    // 3️⃣ Lấy pricing rules
+    const pricingRules = await pricingRepository.find({
+      where: { showtimeId: showtime.id },
+    });
+
+    const pricing = pricingRules.reduce((acc, rule) => {
+      acc[rule.seatType] = Number(rule.price);
+      return acc;
+    }, {} as Record<string, number>);
+
+    // 4️⃣ Return full response cho FE
+    return {
+      movie: {
+        title: showtime.movie.title,
+        poster: showtime.movie.posterUrl,
+        duration: showtime.movie.duration,
+      },
+
+      showtime: {
+        UUID: showtime.UUID,
+        startTime: showtime.startTime,
+        endTime: showtime.endTime,
+      },
+
+      hall: {
+        id: showtime.hall.id,
+        name: showtime.hall.name,
+        type: showtime.hall.type,
+      },
+
+      pricing,
+
+      seats,
+    };
   }
 
 }
