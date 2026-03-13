@@ -6,7 +6,7 @@ import { SeatService } from "../services/SeatService";
 import { ApiResponse } from "../../../utils/ApiResponse";
 import { HoldSeatDTO } from "../dtos/HoldSeat.dto";
 import { ConfirmBookingDTO } from "../dtos/ConfirmBooking.dto";
-
+import { ConfirmWithTokenDTO } from "../dtos/ConfirmWithToken.dto";
 const seatService = new SeatService();
 
 interface AuthRequest extends Request {
@@ -79,33 +79,23 @@ export class SeatController {
 
     //  CONFIRM BOOKING
     async confirmBooking(req: AuthRequest, res: Response) {
-
-        const dto = plainToInstance(ConfirmBookingDTO, req.body);
+        const dto = plainToInstance(ConfirmWithTokenDTO, req.body);
         const errors = await validate(dto);
-
         if (errors.length > 0) {
             const messages = errors
                 .map(err => Object.values(err.constraints || {}))
                 .flat();
             return ApiResponse.error(res, messages.join(", "), 400);
         }
-
         if (!req.user) {
             return ApiResponse.error(res, "Unauthorized", 401);
         }
-
         try {
             const result = await seatService.confirmBooking(
-                dto.showtimeUUID,
-                dto.seatUUIDs,
-                dto.concessions || [],
-                req.user.id,
-                dto.voucherUUID,
-                dto.voucherCode
+                dto.checkoutToken,   // chỉ truyền token
+                req.user.id          // và userId để verify
             );
-
             return ApiResponse.success(res, result, "Booking confirmed");
-
         } catch (error: any) {
             return ApiResponse.error(res, error.message, 400);
         }
@@ -134,7 +124,5 @@ export class SeatController {
             return ApiResponse.error(res, message, statusCode);
         }
     }
-
-
 
 }
