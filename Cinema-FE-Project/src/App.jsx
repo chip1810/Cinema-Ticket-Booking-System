@@ -17,6 +17,18 @@ import GenreManagementPage from './pages/manager/GenreManagementPage/GenreManage
 import BannerManagementPage from './pages/manager/BannerManagementPage/BannerManagementPage';
 import ReviewModerationPage from './pages/manager/ReviewModerationPage/ReviewModerationPage';
 
+// Admin Imports
+import AdminLayout from './components/layout/AdminLayout';
+import AdminLoginPage from './pages/admin/AdminLoginPage/AdminLoginPage';
+import AdminDashboard from './pages/admin/AdminDashboard/AdminDashboard';
+import UsersPage from './pages/admin/UsersPage/UsersPage';
+import StaffPage from './pages/admin/StaffPage/StaffPage';
+import BranchesPage from './pages/admin/BranchesPage/BranchesPage';
+import VouchersPage from './pages/admin/VouchersPage/VouchersPage';
+import RevenueReportsPage from './pages/admin/RevenueReportsPage/RevenueReportsPage';
+import CustomerInsightsPage from './pages/admin/CustomerInsightsPage/CustomerInsightsPage';
+import SettingsPage from './pages/admin/SettingsPage/SettingsPage';
+
 export default function App() {
   return (
     <Routes>
@@ -36,6 +48,20 @@ export default function App() {
           <Footer />
         </div>
       } />
+
+      {/* Admin Routes */}
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="staff" element={<StaffPage />} />
+        <Route path="branches" element={<BranchesPage />} />
+        <Route path="vouchers" element={<VouchersPage />} />
+        <Route path="reports" element={<RevenueReportsPage />} />
+        <Route path="customers" element={<CustomerInsightsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
 
       {/* Manager Routes */}
       <Route path="/manager" element={<ManagerLayout />}>
