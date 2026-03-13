@@ -4,27 +4,36 @@ import { useParams } from "react-router-dom";
 import MovieHero from "../components/movieDetail/MovieHero";
 import MovieInfo from "../components/movieDetail/MovieInfo";
 import ShowtimeSection from "../components/movieDetail/ShowtimeSection";
+import { movieService } from "../services/movieService";
+import Loader from "../components/common/Loading/Loader";
 
 export default function MovieDetail() {
-  const { uuid } = useParams();
-  const [movie, setMovie] = useState(null);
+    const { uuid } = useParams();
+    const [movie, setMovie] = useState(null);
 
-  useEffect(() => {
-    fetch(`http://localhost:3000/api/movies/${uuid}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setMovie(data.data);
-      })
-      .catch((err) => console.error(err));
-  }, [uuid]);
+    useEffect(() => {
+        if (!uuid) return;
 
-  if (!movie) return <div className="p-10 text-center">Loading...</div>;
+        movieService.getMovieByUUID(uuid)
+            .then((data) => {
+                setMovie(data.data);
+            })
+            .catch((err) => console.error(err));
+    }, [uuid]);
 
-  return (
-    <div className="bg-background-dark text-white min-h-screen">
-      <MovieHero movie={movie} />
-      <MovieInfo movie={movie} />
-      <ShowtimeSection showtimes={movie.showtimes} />
-    </div>
-  );
+    if (!movie) {
+        return (
+            <div className="flex min-h-[70vh] items-center justify-center bg-background-dark">
+                <Loader />
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-background-dark text-white">
+            <MovieHero movie={movie} />
+            <MovieInfo movie={movie} />
+            <ShowtimeSection showtimes={movie.showtimes} />
+        </div>
+    );
 }
