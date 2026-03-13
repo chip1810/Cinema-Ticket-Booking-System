@@ -45,6 +45,38 @@ export class SeatController {
         }
     }
 
+    //  CHECKOUT PREVIEW
+    async checkoutPreview(req: AuthRequest, res: Response) {
+        const dto = plainToInstance(ConfirmBookingDTO, req.body);
+        const errors = await validate(dto);
+
+        if (errors.length > 0) {
+            const messages = errors
+                .map(err => Object.values(err.constraints || {}))
+                .flat();
+            return ApiResponse.error(res, messages.join(", "), 400);
+        }
+
+        if (!req.user) {
+            return ApiResponse.error(res, "Unauthorized", 401);
+        }
+
+        try {
+            const result = await seatService.checkoutPreview(
+                dto.showtimeUUID,
+                dto.seatUUIDs,
+                dto.concessions || [],
+                req.user.id,
+                dto.voucherUUID,
+                dto.voucherCode
+            );
+
+            return ApiResponse.success(res, result, "Checkout preview calculated");
+        } catch (error: any) {
+            return ApiResponse.error(res, error.message, 400);
+        }
+    }
+
     //  CONFIRM BOOKING
     async confirmBooking(req: AuthRequest, res: Response) {
 
@@ -79,20 +111,15 @@ export class SeatController {
         }
     }
 
-    async getSeatsByHallId(req: Request, res: Response) {
+    async getSeatsByShowtime(req: Request, res: Response) {
         try {
-            const hallId = Number(req.params.hallId);
-            const showtimeUUID = req.body.showtimeUUID as string;
+            const showtimeUUID = (req.body.showtimeUUID as string | undefined)?.trim();
 
-            if (isNaN(hallId)) {
-                return ApiResponse.error(res, "Invalid hallId", 400);
-            }
-
-            if (!showtimeUUID || typeof showtimeUUID !== "string" || showtimeUUID.trim() === "") {
+            if (!showtimeUUID) {
                 return ApiResponse.error(res, "showtimeUUID is required", 400);
             }
 
-            const seats = await seatService.getSeatsByHallId(hallId, showtimeUUID.trim());
+            const seats = await seatService.getSeatsByShowtime(showtimeUUID);
 
             return ApiResponse.success(res, seats, "Seats fetched successfully");
         } catch (error) {
@@ -107,7 +134,7 @@ export class SeatController {
         }
     }
 
-    async getSeatsByShowtime(req: Request, res: Response) {
+    async getSeatsByShowtime2(req: Request, res: Response) {
         try {
 
             const showtimeUUID = req.params.showtimeUUID;
