@@ -31,5 +31,5 @@ export const AppDataSource = new DataSource({
     },
     synchronize: false,
     logging: true,
-    entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem, Voucher, VoucherUsage, News, Banner, CinemaBranch, SystemSetting],
+    entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem, Voucher, VoucherUsage, News, Banner, CinemaBranch, SystemSetting, ],
 });

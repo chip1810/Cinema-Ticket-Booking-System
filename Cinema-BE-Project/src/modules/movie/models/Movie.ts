@@ -36,18 +36,11 @@ export class Movie {
   posterUrl?: string;
 
   @Column({ nullable: true })
-<<<<<<< HEAD
-<<<<<<< HEAD
-  trailerUrl?: string;
-=======
-  bannerUrl?: string;
->>>>>>> origin/BE/feat-Cinema-Staff
-=======
+
   bannerUrl?: string;
   
   @Column({ nullable: true })
   trailerUrl?: string;
->>>>>>> origin/FE/feat-Cinema-Manager
 
   @Column("decimal", { precision: 2, scale: 1, nullable: true })
   rating?: number;
