@@ -67,6 +67,7 @@ app.get("/api/movies/:id", (req, res) => movie.getById(req, res));
 app.post("/api/movies", (req, res) => movie.create(req, res));
 app.put("/api/movies/:id", (req, res) => movie.update(req, res));
 app.delete("/api/movies/:id", (req, res) => movie.delete(req, res));
+app.get("/api/movies/uuid/:uuid", (req, res) => movie.getByUUID(req, res));
 
 // --- Manager Showtime Routes (Create / Update / Cancel) ---
 app.get("/api/showtimes/:id", (req, res) => showtime.getById(req, res));

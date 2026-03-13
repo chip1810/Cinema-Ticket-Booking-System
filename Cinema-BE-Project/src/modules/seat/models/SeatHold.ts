@@ -5,7 +5,8 @@ import {
     ManyToOne,
     CreateDateColumn,
     Unique,
-    JoinColumn
+    JoinColumn,
+    Index
 } from "typeorm";
 import { Showtime } from "../../showtime/models/Showtime";
 import { Seat } from "./Seat";
@@ -13,6 +14,8 @@ import { User } from "../../auth/models/User";
 
 @Entity("seat_holds")
 @Unique(["showtimeId", "seatId"])
+@Index(["showtimeId"])
+@Index(["expiresAt"])
 export class SeatHold {
     @PrimaryGeneratedColumn()
     id!: number;
