@@ -250,7 +250,7 @@ const HallModal = ({ isOpen, onClose, hall = null, onSave }) => {
                         <select
                             value={formData.type}
                             onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                            className="w-full bg-[#1a0607] border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white [&>option]:text-gray-900"
                         >
                             <option value="Standard">Standard</option>
                             <option value="IMAX">IMAX</option>

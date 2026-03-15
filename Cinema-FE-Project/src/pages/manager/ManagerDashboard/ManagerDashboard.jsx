@@ -1,4 +1,5 @@
 import React, { useEffect, useState, memo, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     TrendingUp,
@@ -46,6 +47,7 @@ const StatCard = memo(({ title, value, change, icon, color, isCurrency }) => {
 });
 
 export default memo(function ManagerDashboard() {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [summary, setSummary] = useState(null);
@@ -121,7 +123,7 @@ export default memo(function ManagerDashboard() {
                 >
                     <div className="flex justify-between items-center mb-8">
                         <h3 className="text-xl font-bold">Revenue Overview</h3>
-                        <select className="bg-[#140405] border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-600 cursor-pointer">
+                        <select className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-600 cursor-pointer text-white [&>option]:text-gray-900">
                             <option>Last 7 Days</option>
                             <option>Last 30 Days</option>
                             <option>This Year</option>
@@ -178,7 +180,10 @@ export default memo(function ManagerDashboard() {
                             </div>
                         )}
                     </div>
-                    <button className="w-full mt-8 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 text-sm font-bold transition-all text-gray-300">
+                    <button 
+                        onClick={() => navigate('/manager/movies')}
+                        className="w-full mt-8 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 text-sm font-bold transition-all text-gray-300"
+                    >
                         Detailed Stats
                     </button>
                 </motion.div>

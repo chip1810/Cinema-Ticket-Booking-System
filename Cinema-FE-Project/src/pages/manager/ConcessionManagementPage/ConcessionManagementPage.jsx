@@ -5,10 +5,13 @@ import {
     Utensils, Coffee, Box, AlertCircle, TrendingUp,
     Loader2, Popcorn, Tag, Package, AlertTriangle
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { managerService } from '../../../services/managerService';
 import { formatVND } from '../../../utils/format';
 
 const ConcessionModal = ({ isOpen, onClose, item = null, onSave }) => {
+    // ... rest of the file ...
+    // ... just adding Swal inside ConcessionManagementPage handleSave below.
     const [formData, setFormData] = useState({
         name: '',
         type: 'Food',
@@ -82,7 +85,7 @@ const ConcessionModal = ({ isOpen, onClose, item = null, onSave }) => {
                             <select
                                 value={formData.type}
                                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                className="w-full bg-[#1a0607] border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white font-medium"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white font-medium [&>option]:text-gray-900"
                             >
                                 <option value="Food">Food</option>
                                 <option value="Drink">Drink</option>
@@ -115,13 +118,27 @@ const ConcessionModal = ({ isOpen, onClose, item = null, onSave }) => {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm text-gray-400 font-medium">Image URL</label>
-                        <input
-                            value={formData.imageUrl}
-                            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                            placeholder="https://..."
-                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 transition-all text-white"
-                        />
+                        <label className="text-sm text-gray-400 font-medium">Image Upload</label>
+                        <div className="flex gap-4 items-center">
+                            {formData.imageUrl && formData.imageUrl.startsWith('data:image') && (
+                                <img src={formData.imageUrl} className="h-12 w-12 object-cover rounded-xl border border-white/10" alt="Preview" />
+                            )}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            setFormData({ ...formData, imageUrl: reader.result });
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 focus:outline-none focus:border-red-600 transition-all text-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-red-600/20 file:text-red-500 hover:file:bg-red-600/30"
+                            />
+                        </div>
                     </div>
 
                     <div className="pt-6 border-t border-white/10 flex gap-4">
@@ -150,6 +167,7 @@ export default function ConcessionManagementPage() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchItems = async () => {
         try {
@@ -192,17 +210,53 @@ export default function ConcessionManagementPage() {
         }
     };
 
+    const filteredItems = items.filter(item => {
+        const name = typeof item.name === 'object' ? item.name?.name : item.name;
+        const type = item.type || (typeof item.category === 'object' ? item.category?.name : item.category);
+        const search = searchTerm.toLowerCase();
+        return (
+            name?.toLowerCase().includes(search) || 
+            type?.toLowerCase().includes(search)
+        );
+    });
+
+    const lowStockItems = items.filter(i => (i.stockQuantity !== undefined && i.stockQuantity < 10) || i.status === 'Out of Stock');
+
     const handleSave = async (data) => {
         try {
             if (editingItem) {
                 await managerService.updateConcession(editingItem.id, data);
+                Swal.fire({
+                    title: 'Updated!',
+                    text: 'Product details updated successfully.',
+                    icon: 'success',
+                    background: '#1a0607',
+                    color: '#fff',
+                    confirmButtonColor: '#dc2626'
+                });
             } else {
                 await managerService.createConcession(data);
+                Swal.fire({
+                    title: 'Added!',
+                    text: 'New product added successfully.',
+                    icon: 'success',
+                    background: '#1a0607',
+                    color: '#fff',
+                    confirmButtonColor: '#dc2626'
+                });
             }
             setIsModalOpen(false);
             fetchItems();
         } catch (err) {
             console.error(err);
+            Swal.fire({
+                title: 'Error!',
+                text: err?.response?.data?.message || 'Failed to save product data.',
+                icon: 'error',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626'
+            });
         }
     };
 
@@ -228,7 +282,13 @@ export default function ConcessionManagementPage() {
                         <div className="p-6 border-b border-white/10 bg-white/[0.02] flex justify-between items-center">
                             <div className="relative w-72">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                <input type="text" placeholder="Search menu..." className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-red-600 text-white" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search menu..." 
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-red-600 text-white" 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
                             </div>
                             <div className="flex gap-2">
                                 <button className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-bold hover:bg-white/10 transition-all text-white">Export CSV</button>
@@ -248,7 +308,7 @@ export default function ConcessionManagementPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {items.map(item => (
+                                    {filteredItems.map(item => (
                                         <tr key={item.id} className="hover:bg-white/[0.01] transition-colors group">
                                             <td className="px-8 py-4">
                                                 <div className="flex items-center gap-3">
@@ -304,22 +364,56 @@ export default function ConcessionManagementPage() {
                         <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/10 rounded-full group-hover:scale-110 transition-transform duration-700" />
                         <Package size={48} className="mb-6 opacity-40 group-hover:rotate-12 transition-transform" />
                         <h4 className="text-xl font-bold mb-2">Inventory Alert</h4>
-                        <p className="text-sm text-white/80 leading-relaxed mb-6">3 items are running low on stock. Consider restocking soon to avoid service disruption.</p>
-                        <button className="w-full py-3 bg-white text-red-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-all">Review Stock</button>
+                        <p className="text-sm text-white/80 leading-relaxed mb-6">
+                            {lowStockItems.length > 0 
+                                ? `${lowStockItems.length} items are running low on stock. Consider restocking soon.` 
+                                : "All items are well-stocked. Great job!"}
+                        </p>
+                        {lowStockItems.length > 0 && (
+                            <button 
+                                onClick={() => setSearchTerm(lowStockItems[0].name)}
+                                className="w-full py-3 bg-white text-red-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-all"
+                            >
+                                View Low Stock
+                            </button>
+                        )}
                     </div>
+
+                    {lowStockItems.length > 0 && (
+                        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+                            <div className="flex items-center gap-3 mb-6 text-red-500">
+                                <AlertCircle size={20} />
+                                <h4 className="font-bold">Restock Needed</h4>
+                            </div>
+                            <div className="space-y-4">
+                                {lowStockItems.slice(0, 3).map(item => (
+                                    <div key={item.id} className="flex gap-3 text-sm">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                                        <p className="text-gray-400">
+                                            <span className="text-white font-medium">{item.name}</span> is low ({item.stockQuantity} left)
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
                         <div className="flex items-center gap-3 mb-6 text-amber-500">
                             <AlertTriangle size={20} />
-                            <h4 className="font-bold">Recent Changes</h4>
+                            <h4 className="font-bold">Recent Updates</h4>
                         </div>
                         <div className="space-y-4">
-                            {[1, 2].map(i => (
-                                <div key={i} className="flex gap-3 text-sm">
+                            {items.length > 0 ? items.slice(-2).reverse().map(item => (
+                                <div key={item.id} className="flex gap-3 text-sm">
                                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                                    <p className="text-gray-400">Price of <span className="text-white font-medium">Family Combo</span> was updated by Mgr. Dat</p>
+                                    <p className="text-gray-400">
+                                        <span className="text-white font-medium">{item.name}</span> was recently synchronized.
+                                    </p>
                                 </div>
-                            ))}
+                            )) : (
+                                <p className="text-xs text-gray-500 italic">No recent activities.</p>
+                            )}
                         </div>
                     </div>
                 </div>

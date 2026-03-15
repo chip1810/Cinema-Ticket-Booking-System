@@ -146,14 +146,27 @@ const BannerModal = ({ isOpen, onClose, banner = null, onSave }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm text-gray-400 font-medium">Image URL</label>
-                            <input
-                                value={formData.imageUrl}
-                                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                                placeholder="https://..."
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 transition-all text-white"
-                                required
-                            />
+                            <label className="text-sm text-gray-400 font-medium">Image Upload</label>
+                            <div className="flex gap-4 items-center">
+                                {formData.imageUrl && formData.imageUrl.startsWith('data:image') && (
+                                    <img src={formData.imageUrl} className="h-12 w-20 object-cover rounded-md border border-white/10" alt="Preview" />
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setFormData({ ...formData, imageUrl: reader.result });
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }
+                                    }}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 focus:outline-none focus:border-red-600 transition-all text-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-red-600/20 file:text-red-500 hover:file:bg-red-600/30 text-sm"
+                                />
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
