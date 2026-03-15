@@ -1,0 +1,33 @@
+/* Standard CSS fixes */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #140405;
+  color: #ffffff;
+}
+
+/* Custom styles that aren't in Tailwind by default but were used earlier */
+.bg-gradient-main {
+  background: radial-gradient(circle at top, #4b0f12 0%, #140405 70%);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
