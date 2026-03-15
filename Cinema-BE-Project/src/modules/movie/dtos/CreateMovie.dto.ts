@@ -19,11 +19,11 @@ export class CreateMovieDTO {
     releaseDate!: string;
 
     @IsOptional()
-    @IsUrl()
+    @IsString()
     posterUrl?: string;
 
     @IsOptional()
-    @IsUrl()
+    @IsString()
     trailerUrl?: string;
 
     @IsNotEmpty()

@@ -16,6 +16,7 @@ import { Order } from "./modules/order/models/Order";
 import { OrderItem } from "./modules/order_item/models/OrderItem";
 import { News } from "./modules/news/models/News";
 import { Banner } from "./modules/banner/models/Banner";
+import { Review } from "./modules/review/models/Review";
 
 dotenv.config();
 
@@ -27,5 +28,5 @@ export const AppDataSource = new DataSource({
     },
     synchronize: true,
     logging: true,
-    entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem, News, Banner],
+    entities: [User, Movie, Genre, Showtime, Hall, Concession, Seat, SeatHold, PricingRule, Ticket, Order, OrderItem, News, Banner, Review],
 });

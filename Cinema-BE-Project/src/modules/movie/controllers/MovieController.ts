@@ -15,7 +15,9 @@ export class MovieController {
             const errors = await validate(dto);
 
             if (errors.length) {
-                return ApiResponse.error(res, "Validation failed", 400);
+                const errorMessages = errors.map(e => Object.values(e.constraints || {})).flat().join(", ");
+                console.log("Validation errors:", JSON.stringify(errors, null, 2));
+                return ApiResponse.error(res, `Validation failed: ${errorMessages}`, 400);
             }
 
             const movie = await movieService.createMovie(dto);

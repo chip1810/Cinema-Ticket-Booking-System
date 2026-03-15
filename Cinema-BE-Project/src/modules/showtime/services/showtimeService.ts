@@ -1,3 +1,4 @@
+import { MoreThan } from "typeorm";
 import { AppDataSource } from "../../../data-source";
 import { Showtime } from "../models/Showtime";
 import { ShowtimeStatus } from "../models/enums/showtime-status";
@@ -18,6 +19,7 @@ export const showtimeService = {
         });
 
         return showtimes.map((s) => ({
+            id: s.id,
             UUID: s.UUID,
             startTime: s.startTime,
             endTime: s.endTime,
@@ -48,6 +50,7 @@ export const showtimeService = {
         });
 
         return showtimes.map((s) => ({
+            id: s.id,
             UUID: s.UUID,
             startTime: s.startTime,
             endTime: s.endTime,
@@ -64,7 +67,39 @@ export const showtimeService = {
                 name: s.hall.name,
             },
         }));
+    },
+
+    async getNearestShowtimes(): Promise<ShowtimeResponseDto[]> {
+        const now = new Date();
+
+        const showtimes = await showtimeRepository.find({
+            where: {
+                status: ShowtimeStatus.ACTIVE,
+                startTime: MoreThan(now)
+            },
+            relations: ["movie", "hall"],
+            order: {
+                startTime: "ASC"
+            },
+            take: 5
+        });
+
+        return showtimes.map((s) => ({
+            id: s.id,
+            UUID: s.UUID,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            status: s.status,
+            movie: {
+                UUID: s.movie.UUID,
+                title: s.movie.title,
+                duration: s.movie.duration,
+                posterUrl: s.movie.posterUrl,
+            },
+            hall: {
+                UUID: s.hall.UUID,
+                name: s.hall.name,
+            },
+        }));
     }
-
-
 };

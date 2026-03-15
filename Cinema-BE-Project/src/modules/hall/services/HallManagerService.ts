@@ -1,7 +1,7 @@
-import { AppDataSource } from "../data-source";
-import { Hall } from "../modules/hall/models/Hall";
-import { Seat } from "../modules/seat/models/Seat";
-import { SeatType } from "../modules/seat/models/enums/SeatType";
+import { AppDataSource } from "../../../data-source";
+import { Hall, HallType } from "../models/Hall";
+import { Seat } from "../../seat/models/Seat";
+import { SeatType } from "../../seat/models/enums/SeatType";
 
 const hallRepo = AppDataSource.getRepository(Hall);
 const seatRepo = AppDataSource.getRepository(Seat);
@@ -27,12 +27,24 @@ export const hallManagerService = {
     async createHall(data: { name: string; type: string; capacity: number }) {
         if (await hallRepo.findOneBy({ name: data.name }))
             throw new Error(`Hall "${data.name}" already exists`);
-        return hallRepo.save(hallRepo.create(data));
+        
+        const hallData = {
+            ...data,
+            type: data.type as HallType
+        };
+
+        return hallRepo.save(hallRepo.create(hallData));
     },
 
     async updateHall(id: number, data: Partial<{ name: string; type: string; capacity: number }>) {
         const hall = await findHall(id);
-        Object.assign(hall, data);
+        
+        const hallData: Partial<Hall> = { 
+            ...data,
+            type: data.type ? data.type as HallType : undefined
+        };
+
+        Object.assign(hall, hallData);
         return hallRepo.save(hall);
     },
 

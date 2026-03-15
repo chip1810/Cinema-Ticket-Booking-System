@@ -1,6 +1,7 @@
 import { ShowtimeStatus } from "../models/enums/showtime-status";
 
 export class ShowtimeResponseDto {
+    id!: number;
     UUID!: string;
     startTime!: Date;
     endTime!: Date;

@@ -8,14 +8,17 @@ import { AppDataSource } from "./data-source";
 // Controllers
 import { AuthController } from "./modules/auth/controllers/AuthController";
 import { MovieController } from "./modules/movie/controllers/MovieController";
-import { ShowtimeController } from "./controllers/ShowtimeController";
-import { ConcessionController } from "./controllers/ConcessionController";
-import { PricingController } from "./controllers/PricingController";
-import { HallManagerController } from "./controllers/HallManagerController";
-import { PricingManagerController } from "./controllers/PricingManagerController";
-import { NewsController } from "./controllers/NewsController";
-import { BannerController } from "./controllers/BannerController";
-import { DashboardController } from "./controllers/DashboardController";
+import { showtimeController } from "./modules/showtime/controllers/showtimeController";
+import { PricingController } from "./modules/pricing_rule/controllers/PricingController";
+import { HallManagerController } from "./modules/hall/controllers/HallManagerController";
+import { PricingManagerController } from "./modules/pricing_rule/controllers/PricingManagerController";
+import { NewsController } from "./modules/news/controllers/NewsController";
+import { BannerController } from "./modules/banner/controllers/BannerController";
+import { DashboardController } from "./modules/manager/controllers/DashboardController";
+import { ReviewController } from "./modules/review/controllers/ReviewController";
+import { GenreController } from "./modules/genre/controllers/GenreController";
+import { ConcessionController } from "./modules/concession/controllers/ConcessionController";
+
 import staffRouter from "./modules/staff/routes/StaffRouter";
 import seatRouter from "./modules/seat/routes/SeatRoute"
 
@@ -28,15 +31,17 @@ import showtimeRoutes from "./modules/showtime/routes/showtimeRoutes";
 dotenv.config();
 
 export const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cors());
 app.use(helmet());
 app.use("/api/showtimes", showtimeRoutes);
 
+
 // --- Controller instances ---
 const auth = new AuthController();
 const movie = new MovieController();
-const showtime = new ShowtimeController();
+// const showtime = new ShowtimeController(); // Removed as showtimeController is an object
 const concession = new ConcessionController();
 const pricing = new PricingController();
 const hallManager = new HallManagerController();
@@ -44,6 +49,8 @@ const pricingManager = new PricingManagerController();
 const news = new NewsController();
 const banner = new BannerController();
 const dashboard = new DashboardController();
+const genre = new GenreController();
+const review = new ReviewController();
 
 // --- Auth Routes ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
@@ -58,11 +65,15 @@ app.post("/api/movies", (req, res) => movie.create(req, res));
 app.put("/api/movies/:id", (req, res) => movie.update(req, res));
 app.delete("/api/movies/:id", (req, res) => movie.delete(req, res));
 
-// --- Manager Showtime Routes (Create / Update / Cancel) ---
-app.get("/api/showtimes/:id", (req, res) => showtime.getById(req, res));
-app.post("/api/showtimes", (req, res) => showtime.create(req, res));
-app.put("/api/showtimes/:id", (req, res) => showtime.update(req, res));
-app.delete("/api/showtimes/:id", (req, res) => showtime.delete(req, res));
+// --- Genre Routes ---
+app.get("/api/genres", (req, res) => genre.getAll(req, res));
+app.post("/api/genres", (req, res) => genre.create(req, res));
+app.delete("/api/genres/:id", (req, res) => genre.delete(req, res));
+
+// --- Manager Showtime Routes (Using showtimeController object) ---
+app.get("/api/manager/showtimes", (req, res) => showtimeController.getAll(req, res));
+app.get("/api/manager/showtimes/movie/:movieId", (req, res) => showtimeController.getByMovieId(req, res));
+app.get("/api/manager/showtimes/nearest", (req, res) => showtimeController.getNearest(req, res));
 
 
 // --- Concession Routes ---
@@ -114,36 +125,11 @@ app.get("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.getBySh
 app.post("/api/manager/pricing", (req, res) => pricingManager.setRules(req, res));
 app.delete("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.deleteByShowtime(req, res));
 
-// --- Seed Route (Dev only) ---
-app.post("/api/seed", async (req: Request, res: Response) => {
-    try {
-        const hallRepo = AppDataSource.getRepository(Hall);
-        const genreRepo = AppDataSource.getRepository(Genre);
-
-        if (await hallRepo.count() === 0) {
-            await hallRepo.save([
-                { name: "Cinema 1", capacity: 100, type: "Standard" },
-                { name: "Cinema 2", capacity: 80, type: "Standard" },
-                { name: "IMAX Hall", capacity: 200, type: "IMAX" },
-            ]);
-        }
-        if (await genreRepo.count() === 0) {
-            await genreRepo.save([
-                { name: "Action" },
-                { name: "Drama" },
-                { name: "Comedy" },
-                { name: "Horror" },
-                { name: "Sci-Fi" },
-            ]);
-        }
-        return res.json({ message: "Seed data created successfully" });
-    } catch (e: any) {
-        return res.status(500).json({ error: e.message });
-    }
-});
+// --- Review Moderation Routes ---
+app.get("/api/reviews", (req, res) => review.getAll(req, res));
+app.patch("/api/reviews/:id/moderate", (req, res) => review.moderate(req, res));
+app.delete("/api/reviews/:id", (req, res) => review.delete(req, res));
 
 // --- Health Check ---
 app.get("/", (_req, res) => res.json({ status: "ok", message: "Cinema API running" }));
-
-// --- Start Server ---
 

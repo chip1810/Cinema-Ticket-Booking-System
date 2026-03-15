@@ -1,27 +1,17 @@
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    ManyToMany,
-    Generated
-} from "typeorm";
-import { Movie } from "../../movie/models/Movie";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from "typeorm";
+import { Movie } from "../../movie/models/Movie"; // Giả định model Movie đã tồn tại
 
 @Entity("genres")
 export class Genre {
-  @PrimaryGeneratedColumn()
-  id!: number;
-
-    @Column({ type: "uuid", unique: true })
-    @Generated("uuid")
-    UUID!: string;
+    @PrimaryGeneratedColumn()
+    id!: number;
 
     @Column({ unique: true })
     name!: string;
 
-  @Column({ type: "text", nullable: true })
-  description?: string;
+    @Column({ nullable: true })
+    description?: string;
 
-    @ManyToMany(() => Movie, (movie) => movie.genres)
+    @ManyToMany(() => Movie, movie => movie.genres)
     movies!: Movie[];
 }

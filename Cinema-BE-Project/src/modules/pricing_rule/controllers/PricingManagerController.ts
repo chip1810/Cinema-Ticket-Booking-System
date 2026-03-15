@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import { AppDataSource } from "../data-source";
-import { PricingRule } from "../modules/pricing_rule/models/PricingRule";
-import { Showtime } from "../modules/showtime/models/Showtime";
-import { SeatType } from "../modules/seat/models/enums/SeatType";
-import { ApiResponse } from "../utils/ApiResponse";
+import { AppDataSource } from "../../../data-source";
+import { PricingRule } from "../models/PricingRule";
+import { Showtime } from "../../showtime/models/Showtime";
+import { SeatType } from "../../seat/models/enums/SeatType";
+import { ApiResponse } from "../../../utils/ApiResponse";
 
 const repo = AppDataSource.getRepository(PricingRule);
 const ok = (res: Response, data: any, msg: string, code = 200) => ApiResponse.success(res, data, msg, code);
@@ -14,7 +14,11 @@ export class PricingManagerController {
     // GET /api/manager/pricing/:showtimeId
     async getByShowtime(req: Request, res: Response) {
         try {
-            const rules = await repo.find({ where: { showtimeId: Number(req.params.showtimeId) } });
+            const showtimeId = Number(req.params.showtimeId);
+            if (isNaN(showtimeId)) {
+                return fail(res, { message: "Invalid showtimeId" }, 400);
+            }
+            const rules = await repo.find({ where: { showtimeId } });
             return ok(res, rules, "Pricing rules fetched");
         } catch (e) { return fail(res, e, 500); }
     }
@@ -44,7 +48,11 @@ export class PricingManagerController {
     // DELETE /api/manager/pricing/:showtimeId
     async deleteByShowtime(req: Request, res: Response) {
         try {
-            await repo.delete({ showtimeId: Number(req.params.showtimeId) });
+            const showtimeId = Number(req.params.showtimeId);
+            if (isNaN(showtimeId)) {
+                return fail(res, { message: "Invalid showtimeId" }, 400);
+            }
+            await repo.delete({ showtimeId });
             return ok(res, null, "Pricing rules deleted");
         } catch (e) { return fail(res, e, 500); }
     }

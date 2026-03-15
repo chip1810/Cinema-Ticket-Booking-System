@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { AppDataSource } from "../data-source";
-import { Banner } from "../modules/banner/models/Banner";
-import { ApiResponse } from "../utils/ApiResponse";
+import { AppDataSource } from "../../../data-source";
+import { Banner } from "../models/Banner";
+import { ApiResponse } from "../../../utils/ApiResponse";
 
 const repo = AppDataSource.getRepository(Banner);
 const ok = (res: Response, data: any, msg: string, code = 200) => ApiResponse.success(res, data, msg, code);

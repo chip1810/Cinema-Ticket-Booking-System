@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { hallManagerService } from "../services/HallManagerService";
-import { ApiResponse } from "../utils/ApiResponse";
+import { ApiResponse } from "../../../utils/ApiResponse";
 
 const ok = (res: Response, data: any, msg: string, code = 200) => ApiResponse.success(res, data, msg, code);
 const fail = (res: Response, e: any, code = 400) => ApiResponse.error(res, e.message, code);
