@@ -22,6 +22,10 @@ const UserSchema = new Schema({
   googleId: { type: String, unique: true, sparse: true },
   avatar: { type: String },
   authProvider: { type: String, enum: ["local", "google"], default: "local" },
+  // Profile fields
+  dateOfBirth: { type: Date },
+  gender: { type: String, enum: ["male", "female", "other"] },
+  address: { type: String },
 }, { timestamps: true });
 
 // Tạo model Mongoose từ schema

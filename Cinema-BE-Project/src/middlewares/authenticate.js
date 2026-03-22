@@ -16,6 +16,8 @@ const authenticate = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log("=== JWT DEBUG ===");
+    console.log("decoded:", decoded);
 
     // gán user vào req.user
     req.user = {
@@ -23,9 +25,11 @@ const authenticate = (req, res, next) => {
       email: decoded.email,
       role: decoded.role, // role đã là string từ JWT
     };
+    console.log("req.user set:", req.user);
 
     next();
   } catch (err) {
+    console.error("JWT verify error:", err);
     return ApiResponse.error(res, "Invalid token", 401);
   }
 };

@@ -49,8 +49,13 @@ export default function MovieGrid({ movies }) {
                             </div>
 
                             <p className="text-slate-500 text-xs">
-                                {movie.genres?.map((g) => g.name).join(", ") || "Movie"} •{" "}
-                                {movie.duration}m
+                                {movie.genres?.length
+                                    ? movie.genres.map((g, i) => (
+                                          <span key={g._id || g.id || i}>
+                                              {g.name}{i < movie.genres.length - 1 ? ", " : ""}
+                                          </span>
+                                      ))
+                                    : "Movie"} • {movie.duration}m
                             </p>
                         </div>
                     </div>

@@ -148,7 +148,10 @@ export default function AuthModal({ isOpen, onClose, origin }) {
                 setIsRegister(false);
             } else {
                 const res = await loginApi({ email: formData.email, password: formData.password });
-                login(res.data.accessToken);
+                // Backend trả về res.data = { user, token }, KHÔNG PHẢI accessToken
+                const token = res.data?.token || res.data?.accessToken;
+                if (!token) throw new Error("Không nhận được token từ server");
+                login(token);
                 onClose();
                 focusMainContentAfterLogin();
             }

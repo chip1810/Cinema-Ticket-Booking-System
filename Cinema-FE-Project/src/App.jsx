@@ -5,6 +5,7 @@ import Footer from './components/landingPage/Footer';
 import MovieDetail from './pages/MovieDetail';
 import GoogleAuthCallback from './pages/GoogleAuthCallback';
 import ForgotPassword from './pages/ForgotPassword';
+import Profile from './pages/Profile';
 import { AuthProvider } from './context/AuthContext';
 import BookingFlow from './pages/BookingFlow';
 
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="/booking/:uuid" element={<BookingFlow />} />
             <Route path="/auth/google/success" element={<GoogleAuthCallback />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/profile" element={<Profile />} />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLoginPage />} />

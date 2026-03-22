@@ -15,8 +15,6 @@ export default function Home() {
     const [comingSoon, setComingSoon] = useState([]);
     const location = useLocation();
     const navigate = useNavigate();
-
-    /** 登录成功后从其它页跳回首页时，滚动到「正在上映」区块 */
     useEffect(() => {
         if (!location.state?.focusMovies) return;
         const t = window.setTimeout(() => {

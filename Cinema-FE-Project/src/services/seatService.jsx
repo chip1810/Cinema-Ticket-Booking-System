@@ -1,11 +1,11 @@
-const BASE_URL = "http://localhost:3000/api";
+const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
 export const seatService = {
 
   async getSeatsByShowtime(uuid) {
 
     const res = await fetch(
-      `${BASE_URL}/seat/showtimes/showtimeUuid/${uuid}/seats`
+      `${BASE_URL}/api/seat/showtimes/showtimeUuid/${uuid}/seats`
     );
 
     if (!res.ok) {
@@ -21,7 +21,7 @@ export const seatService = {
 
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`${BASE_URL}/seat/hold`, {
+    const res = await fetch(`${BASE_URL}/api/seat/hold`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
