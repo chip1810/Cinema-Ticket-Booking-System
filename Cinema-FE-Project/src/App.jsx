@@ -33,75 +33,53 @@ import SettingsPage from './pages/admin/SettingsPage/SettingsPage';
 
 export default function App() {
   return (
-<<<<<<< HEAD
-    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-      <AuthProvider>
-
+    <AuthProvider>
+      <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
         <Header />
 
         <main className="flex-1">
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/movies/:uuid" element={<MovieDetail />} />
             <Route path="/booking/:uuid" element={<BookingFlow />} />
+
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<UsersPage />} />
+              <Route path="staff" element={<StaffPage />} />
+              <Route path="branches" element={<BranchesPage />} />
+              <Route path="vouchers" element={<VouchersPage />} />
+              <Route path="reports" element={<RevenueReportsPage />} />
+              <Route path="customers" element={<CustomerInsightsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+
+            {/* Manager Routes */}
+            <Route path="/manager" element={<ManagerLayout />}>
+              <Route index element={<Navigate to="/manager/dashboard" replace />} />
+              <Route path="dashboard" element={<ManagerDashboard />} />
+              <Route path="movies" element={<MovieManagementPage />} />
+              <Route path="showtimes" element={<ShowtimeManagementPage />} />
+              <Route path="halls" element={<HallManagementPage />} />
+              <Route path="concessions" element={<ConcessionManagementPage />} />
+              <Route path="pricing" element={<PricingManagementPage />} />
+              <Route path="news" element={<NewsManagementPage />} />
+              <Route path="genres" element={<GenreManagementPage />} />
+              <Route path="banners" element={<BannerManagementPage />} />
+              <Route path="reviews" element={<ReviewModerationPage />} />
+            </Route>
+
+            {/* Catch all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 
         <Footer />
-
-      </AuthProvider>
-    </div>
-=======
-    <Routes>
-      {/* Landing Page Routes */}
-      <Route path="/" element={
-        <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-          <Header />
-          <Home />
-          <Footer />
-        </div>
-      } />
-
-      <Route path="/movies/:uuid" element={
-        <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-          <Header />
-          <MovieDetail />
-          <Footer />
-        </div>
-      } />
-
-      {/* Admin Routes */}
-      <Route path="/admin/login" element={<AdminLoginPage />} />
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="staff" element={<StaffPage />} />
-        <Route path="branches" element={<BranchesPage />} />
-        <Route path="vouchers" element={<VouchersPage />} />
-        <Route path="reports" element={<RevenueReportsPage />} />
-        <Route path="customers" element={<CustomerInsightsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
-
-      {/* Manager Routes */}
-      <Route path="/manager" element={<ManagerLayout />}>
-        <Route index element={<Navigate to="/manager/dashboard" replace />} />
-        <Route path="dashboard" element={<ManagerDashboard />} />
-        <Route path="movies" element={<MovieManagementPage />} />
-        <Route path="showtimes" element={<ShowtimeManagementPage />} />
-        <Route path="halls" element={<HallManagementPage />} />
-        <Route path="concessions" element={<ConcessionManagementPage />} />
-        <Route path="pricing" element={<PricingManagementPage />} />
-        <Route path="news" element={<NewsManagementPage />} />
-        <Route path="genres" element={<GenreManagementPage />} />
-        <Route path="banners" element={<BannerManagementPage />} />
-        <Route path="reviews" element={<ReviewModerationPage />} />
-      </Route>
-
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
->>>>>>> c928101b81c42adeb0de36af48334a24d7fe7300
+      </div>
+    </AuthProvider>
   );
 }

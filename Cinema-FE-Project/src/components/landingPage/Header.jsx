@@ -44,17 +44,10 @@ export default function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
-<<<<<<< HEAD
           <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Movies</a>
           <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Venues</a>
           <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Offers</a>
           <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Membership</a>
-=======
-          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Movies</a>
-          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Venues</a>
-          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Offers</a>
-          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="/manager">Manager Portal</a>
->>>>>>> c928101b81c42adeb0de36af48334a24d7fe7300
         </nav>
       </div>
 
@@ -67,7 +60,6 @@ export default function Header() {
           <input
             className="bg-transparent border-none focus:outline-none text-sm text-slate-100 placeholder:text-slate-500 w-48"
             placeholder="Search movies..."
-<<<<<<< HEAD
           />
         </div>
 
@@ -128,38 +120,6 @@ export default function Header() {
           Book Now
         </button>
 
-=======
-            type="text"
-          />
-        </div>
-
-        <div className="flex items-center gap-4">
-          {!isLoggedIn ? (
-            <button
-              onClick={() => setIsLoggedIn(true)}
-              className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-sm font-medium"
-            >
-              <LogIn className="w-4 h-4" /> Login
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsLoggedIn(false)}
-              className="flex items-center gap-2 text-slate-300 hover:text-primary transition-colors text-sm font-medium"
-            >
-              <LogOut className="w-4 h-4" /> Logout
-            </button>
-          )}
-
-          <button className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-full text-sm font-bold transition-all transform hover:scale-105 active:scale-95">
-            Book Now
-          </button>
-        </div>
-
-        <div
-          className="w-10 h-10 rounded-full border-2 border-primary/20 bg-cover bg-center cursor-pointer"
-          style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCTR36E75QaZ4nMQ6zq0qHGrvInEoUbrN6T0_Ryr3DcI8soQ2Pmnv1SNMYJHjDHb1Gy_dmsOoX2PHp-28d7uRFCVZDsn8_bfzzUwOjbBjMWnr3HV4WkGD_KlnvfD9o6Fuco1CyTRMTQDs-pIU_34MzckbbFiwXWxwPrIqrjD6kaREbFw0m4XdqFPKdEhoWWaYY9girSkbl8EYFzrfQPJVC1Nw5avcm1UxJhng-jSPbKSdwo9A5VcF4ubCb9oShF2CT3chsJT2EGfw')" }}
-        />
->>>>>>> c928101b81c42adeb0de36af48334a24d7fe7300
       </div>
 
       <AuthModal

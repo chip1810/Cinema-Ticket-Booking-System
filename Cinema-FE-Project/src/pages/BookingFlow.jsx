@@ -1,79 +1,87 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import SeatSelection from "./SeatSelection";
 import ConcessionPage from "./customer/concessionPage/ConcessionPage";
 
 export default function BookingFlow() {
     const { uuid } = useParams();
-    const navigate = useNavigate();
 
-    // Quản lý flow: 1 = Chọn ghế, 2 = Bắp nước, 3 = Thanh toán
+    // Quản lý flow: 1 = Chọn ghế, 2 = Bắp nước
     const [step, setStep] = useState(1);
 
-    // State tổng để tổng hợp dữ liệu cuối cùng
+    // State tổng hợp dữ liệu
     const [selectedSeats, setSelectedSeats] = useState([]);
-    const [seatData, setSeatData] = useState(null); // Giữ thông tin movie/hall để trang nước dùng
-
+    const [seatData, setSeatData] = useState(null); // Thông tin ghế + showtime
     const [socket, setSocket] = useState(null);
 
-    // 1. Khởi tạo Socket Duy Nhất
+    // 1️⃣ Khởi tạo Socket
     useEffect(() => {
         const newSocket = io("http://localhost:3000");
 
         newSocket.on("connect", () => {
             console.log("🟢 Socket connected:", newSocket.id);
             console.log("📡 Join showtime room:", uuid);
-
             newSocket.emit("join-showtime", uuid);
         });
 
         setSocket(newSocket);
 
         return () => {
-            console.log("🔴 disconnect socket");
+            console.log("🔴 Disconnect socket");
             newSocket.disconnect();
         };
     }, [uuid]);
 
-    // 2. Hàm chuyển từ Ghế -> Nước
-    const handleSeatsConfirmed = (seats, data) => {
-        setSelectedSeats(seats);
-        setSeatData(data);
-
-        // Gửi lệnh giữ ghế chính thức lên Server để bắt đầu tính 5 phút
-        socket.emit("hold-seats", {
-            showtimeId: uuid,
-            seatUUIDs: seats
-        });
-
-        setStep(2); // Chuyển sang tab bắp nước
+    // 2️⃣ Khi user xác nhận ghế
+    const handleSeatsConfirmed = (bookingData) => {
+        setSeatData(bookingData); // bookingData.details là mảng ghế
+        setStep(2);
     };
-
-    // 3. Hàm quay lại từ Nước -> Ghế
+    // 3️⃣ Quay lại trang chọn ghế
     const handleBackToSeats = () => {
         setStep(1);
     };
 
+    // 4️⃣ Tạo object bookingData an toàn
+    const bookingDataSafe = seatData
+        ? {
+            details: seatData.seats?.filter((s) =>
+                selectedSeats.includes(s.UUID)
+            ) || [],
+            totalPrice: selectedSeats.reduce((total, seatUUID) => {
+                const seat = seatData?.seats?.find((s) => s.UUID === seatUUID);
+                if (!seat) return total;
+                return total + (seatData?.pricing?.[seat.type] || 0);
+            }, 0),
+            showtime: seatData.showtime || null,
+            movie: seatData.movie || null,
+            holdExpiresAt: seatData.holdExpiresAt || null,
+        }
+        : null;
+
     return (
         <div className="min-h-screen bg-[#050505]">
-            {/* Trung có thể đặt một cái ProgressBar chung ở đây nếu muốn */}
-
             {step === 1 && (
                 <SeatSelection
                     socket={socket}
                     onNext={handleSeatsConfirmed}
-                    savedSeats={selectedSeats} // Truyền lại ghế cũ nếu user quay lại từ tab nước
+                    savedSeats={selectedSeats}
                 />
             )}
 
             {step === 2 && (
-                <ConcessionPage
-                    onBack={handleBackToSeats}
-                    selectedSeats={selectedSeats}
-                    seatData={seatData}
-                    onComplete={(snacks) => console.log("Final Order:", { seats: selectedSeats, snacks })}
-                />
+                <>
+                    {console.log("📝 bookingData chuẩn bị gửi sang ConcessionPage:", {
+                        selectedSeats,
+                        seatData
+                    })}
+                    <ConcessionPage
+                        bookingData={seatData} // đã bao gồm details, totalPrice, holdExpiresAt...
+                        onBack={handleBackToSeats}
+                        onNext={(finalOrder) => console.log("Final order:", finalOrder)}
+                    />
+                </>
             )}
         </div>
     );

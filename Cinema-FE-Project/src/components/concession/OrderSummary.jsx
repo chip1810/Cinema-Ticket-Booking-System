@@ -1,60 +1,80 @@
-import React from 'react';
+import React from "react";
 
-export const OrderSummary = ({ items, total }) => {
+export const OrderSummary = ({
+  movieTitle,
+  posterUrl, // thêm prop poster
+  bookingDetails = [],
+  showtime,
+  items = [],
+  ticketTotal = 0,
+  total = 0,
+  onProceed
+}) => {
+
+  const formattedShowtime = showtime
+    ? `${new Date(showtime).toLocaleDateString()} • ${new Date(showtime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`
+    : "-";
+
   return (
-    <aside className="w-96 bg-surface-container border-l border-outline-variant/15 flex flex-col">
-      <div className="p-8">
-        <div className="flex items-center gap-4 mb-8">
+    <aside className="w-96 bg-[#0a0a0a]/80 border-l border-white/10 flex flex-col">
+      {/* Header */}
+      <div className="p-6 border-b border-white/10 flex gap-4 items-center">
+        {posterUrl && (
           <img
-            alt="Movie Poster"
-            className="w-20 h-28 object-cover rounded-lg shadow-xl"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwFL1olgB-EEgQzPUsH-oSPR2dmHgVzbobQ38WQENy8RnNKopwqB0BsCZo8XG6OnFey4SaeGIBovG0ZNrLrLY0Dg_itWxTxSSoxY_tdVWD1_9JfFAsJt1p_r9J8OdZnddE_Mc7tGGaJDeY832_fikDysq1Usawcxj-haBzdC4CgTG_D2ytmrDa1DmAhTv5huy8u8Z31oiMCUUFBzvjuKjL-PAyiLO8e6zG8qoywXIivD-VjPzBfE2E1AwQN2JOs55cRi_xIW3QkMvk"
+            src={posterUrl}
+            alt={movieTitle}
+            className="w-20 h-28 object-cover rounded-lg shadow-md"
           />
-          <div>
-            <h3 className="text-headline font-bold text-xl leading-tight">Order Summary</h3>
-            <p className="text-on-surface-variant text-xs mt-1">Starlight Premium Cinema</p>
-          </div>
+        )}
+        <div className="flex-1">
+          <h3 className="text-xl font-bold text-white mb-1">{movieTitle || "Unknown Movie"}</h3>
+          <p className="text-gray-400 text-sm">
+            Seats: {bookingDetails.map(d => d.seatNumber).join(", ") || "-"}
+          </p>
+          <p className="text-gray-500 text-[10px] uppercase tracking-wider mt-1">{formattedShowtime}</p>
         </div>
+      </div>
 
-        <div className="space-y-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-on-surface font-semibold text-sm">Dune: Part Two</p>
-              <p className="text-on-surface-variant text-xs">Seats A12, A13</p>
-              <p className="text-on-surface-variant text-[10px] uppercase tracking-wider mt-1">Tomorrow • 19:30</p>
-            </div>
-            <span className="font-bold text-sm">$32.00</span>
+      {/* Tickets + Snacks */}
+      <div className="flex-1 p-6 overflow-y-auto">
+        <div className="space-y-4">
+          {/* Ticket */}
+          <div className="flex justify-between items-center">
+            <span className="text-white font-medium">Tickets</span>
+            <span className="text-white font-bold">{ticketTotal.toLocaleString()}₫</span>
           </div>
 
-          <div className="pt-6 border-t border-outline-variant/10">
-            <p className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest mb-4">Snacks Added</p>
-            <div className="space-y-4">
-              {items.map((item, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className="text-sm">{item.name} x{item.quantity}</span>
-                  <span className="text-sm font-bold">${(item.price * item.quantity).toFixed(2)}</span>
-                </div>
-              ))}
-              {items.length === 0 && (
-                <p className="text-on-surface-variant text-xs italic">No snacks added yet</p>
+          {/* Snacks */}
+          <div className="pt-4 border-t border-white/10">
+            <p className="text-gray-400 text-[10px] uppercase tracking-widest mb-2">Snacks Added</p>
+            <div className="space-y-2">
+              {items.length > 0 ? (
+                items.map((item, index) => (
+                  <div key={index} className="flex justify-between items-center text-white">
+                    <span>{item.name} x{item.quantity}</span>
+                    <span className="font-bold">{(item.price * item.quantity).toLocaleString()}₫</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 italic text-[12px]">No snacks added yet</p>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-auto p-8 bg-surface-container-high/50 border-t border-outline-variant/15">
-        <div className="flex justify-between items-center mb-6">
-          <span className="text-on-surface-variant font-label uppercase text-xs tracking-widest">Total Payable</span>
-          <span className="text-3xl font-headline font-extrabold text-primary-container">${total.toFixed(2)}</span>
+      {/* Footer / Total + Checkout */}
+      <div className="p-6 border-t border-white/10 bg-[#111]/70">
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-gray-400 uppercase text-xs tracking-widest">Total Payable</span>
+          <span className="text-2xl font-bold text-white">{total.toLocaleString()}₫</span>
         </div>
-        <button className="w-full bg-primary-container text-on-primary-container py-4 rounded-lg font-headline font-bold text-sm uppercase tracking-widest shadow-[0_4px_20px_rgba(229,9,20,0.3)] hover:brightness-110 transition-all flex items-center justify-center gap-2">
-          Checkout
-          <span className="material-symbols-outlined text-sm">arrow_forward</span>
+        <button
+          onClick={onProceed}
+          className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold uppercase tracking-wider shadow-md transition-transform active:scale-95"
+        >
+          Thanh toán
         </button>
-        <p className="text-center text-[10px] text-on-surface-variant mt-4">
-          By clicking Checkout, you agree to our Terms of Service
-        </p>
       </div>
     </aside>
   );
