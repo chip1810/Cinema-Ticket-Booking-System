@@ -5,8 +5,12 @@ export default function ShowtimeSection({ showtimes }) {
   const grouped = {};
 
   showtimes?.forEach((s) => {
+<<<<<<< HEAD
     const date = new Date(s.startTime).toLocaleDateString("en-CA"); 
     // format YYYY-MM-DD
+=======
+    const date = (s.startTime || '').split("T")[0];
+>>>>>>> c928101b81c42adeb0de36af48334a24d7fe7300
 
     if (!grouped[date]) grouped[date] = [];
     grouped[date].push(s);
