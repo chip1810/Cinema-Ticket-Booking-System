@@ -64,34 +64,32 @@ export default function SeatSelection({ socket, onNext, savedSeats }) {
             console.log("⏳ Đang gửi yêu cầu giữ ghế...");
 
             // 1. Gọi API holdSeats từ service
-            // uuid ở đây là từ useParams() của trang SeatSelection
             const response = await seatService.holdSeats(uuid, selectedSeats);
 
-            // Log để Trung kiểm tra như đã hứa nhé
+            // Log kiểm tra
             console.log("✅ [BACKEND LOG] Ghế đã được giữ thành công:", response.data);
             console.log("⏰ Thời gian hết hạn:", new Date(response.data.expiresAt).toLocaleTimeString());
 
-            // 2. Tìm chi tiết các ghế đã chọn để truyền dữ liệu đi
+            // 2. Lấy chi tiết ghế đã chọn
             const selectedSeatsDetails = seatData.seats.filter(s => selectedSeats.includes(s.UUID));
 
-            // 3. Gọi callback của Cha để chuyển sang bước Bắp nước (Step 2)
-            onNext(selectedSeats, {
-                details: selectedSeatsDetails,
-                totalPrice: calculateTotal(),
-                pricing: seatData.pricing,
+            // 3. Gộp tất cả dữ liệu vào 1 object duy nhất
+            const bookingDataForConcession = {
+                selectedSeats,             // UUID các ghế
+                details: selectedSeatsDetails, // chi tiết ghế
+                totalPrice: calculateTotal(),  // tổng tiền vé
+                pricing: seatData.pricing,     // bảng giá
                 movie: seatData.movie,
                 showtime: seatData.showtime,
                 holdExpiresAt: response.data.expiresAt
-            });
+            };
+
+            // 4. Gọi callback onNext với 1 object duy nhất
+            onNext(bookingDataForConcession);
 
         } catch (error) {
             console.error("❌ [API ERROR] Lỗi giữ ghế:", error.message);
-
-            // Thông báo cho user biết ghế đã có người chọn hoặc lỗi hệ thống
             alert("Rất tiếc, một số ghế bạn chọn vừa có người khác giữ mất hoặc đã hết hạn. Trung vui lòng chọn lại ghế khác nhé!");
-
-            // Có thể reload lại danh sách ghế tại đây nếu cần
-            // window.location.reload(); 
         }
     };
     const calculateTotal = () => {
