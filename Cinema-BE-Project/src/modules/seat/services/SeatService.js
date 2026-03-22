@@ -32,7 +32,7 @@ class SeatService {
       if (seats.length !== seatUUIDs.length) throw new Error("Some seats not found");
 
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + 5 * 60 * 1000);
+      const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
 
       for (const seat of seats) {
         if (!seat.hall.equals(showtime.hall)) {
@@ -86,7 +86,7 @@ class SeatService {
       return {
         seats: seatUUIDs,
         expiresAt,
-        expiresIn: 300
+        expiresIn: 600
       };
 
     } catch (err) {
@@ -305,7 +305,7 @@ class SeatService {
       finalAmount = voucherResult.finalAmount;
     }
 
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     const payload = {
       userId,
       showtimeUUID,
@@ -319,7 +319,7 @@ class SeatService {
       expiresAt: expiresAt.toISOString(),
     };
 
-    const checkoutToken = jwt.sign(payload, process.env.CHECKOUT_TOKEN_SECRET, { expiresIn: "5m" });
+    const checkoutToken = jwt.sign(payload, process.env.CHECKOUT_TOKEN_SECRET, { expiresIn: "10m" });
 
     return {
       seatsTotal,

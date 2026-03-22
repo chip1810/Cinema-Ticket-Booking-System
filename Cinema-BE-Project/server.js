@@ -1,7 +1,7 @@
 const http = require("http");
-const { app } = require("./app");
-const { initSocket } = require("./socket");
-const { connectMongo } = require("./mongo");
+const { app } = require("./src/app");
+const { initSocket } = require("./src/socket");
+const { connectMongo } = require("./src/mongo");
 
 const PORT = process.env.PORT || 3000;
 
