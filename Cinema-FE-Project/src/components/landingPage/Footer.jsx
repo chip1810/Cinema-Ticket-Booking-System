@@ -9,7 +9,7 @@ export default function Footer() {
             <div className="w-8 h-8 bg-primary rounded flex items-center justify-center text-white">
               <span className="font-bold">S</span>
             </div>
-            <h2 className="text-slate-100 text-xl font-bold">STARLIGHT</h2>
+            <h2 className="text-slate-100 text-xl font-bold">FCINEMA</h2>
           </div>
           <p className="text-slate-500 text-sm leading-relaxed">
             Redefining the cinematic experience with luxury and cutting-edge technology. Experience film as it was meant to be seen.
@@ -47,7 +47,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-white/5 pt-8 text-center text-slate-600 text-xs">
-        © 2024 Starlight Luxury Cinemas. All Rights Reserved.
+        © 2024 FCINEMA Luxury Cinemas. All Rights Reserved.
       </div>
     </footer>
   );
