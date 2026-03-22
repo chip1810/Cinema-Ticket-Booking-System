@@ -1,32 +1,26 @@
+const mongoose = require("mongoose");
 const { User, UserRole } = require("../../auth/models/User");
 
+const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
+
 class UserManagementService {
-
-  // 📋 GET ALL CUSTOMERS
   async getAllCustomers() {
-    const customers = await User.find({ role: UserRole.CUSTOMER })
-      .select("-password -resetPasswordOTP -resetPasswordExpires") // bỏ field nhạy cảm
-      .lean();
-
-    return customers;
+    return User.find({ role: UserRole.CUSTOMER }).select("UUID email fullName phoneNumber isBlocked");
   }
 
-  // 🔒 BLOCK USER
   async blockUser(userId) {
-    // ⚠️ Mongo dùng _id (ObjectId), không phải number id
-    const user = await User.findById(userId);
+    const user = await User.findOne({
+      $or: [
+        { UUID: userId },
+        ...(isObjectId(userId) ? [{ _id: userId }] : []),
+      ],
+    });
 
-    if (!user) {
-      throw new Error("User not found");
-    }
+    if (!user) throw new Error("User not found");
 
     user.isBlocked = true;
-    await user.save();
-
-    const { password, resetPasswordOTP, resetPasswordExpires, ...safeUser } = user.toObject();
-
-    return safeUser;
+    return user.save();
   }
 }
 
-module.exports = { UserManagementService };
+module.exports = UserManagementService;

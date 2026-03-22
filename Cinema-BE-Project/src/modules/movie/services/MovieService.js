@@ -1,30 +1,35 @@
+const mongoose = require("mongoose");
 const Movie = require("../models/Movie");
 const Genre = require("../../genre/models/Genre");
-const Seat = require("../../seat/models/Seat");
+const { Seat } = require("../../seat/models/Seat");
 const Ticket = require("../../ticket/models/Ticket");
 const SeatHold = require("../../seat/models/SeatHold");
 const Showtime = require("../../showtime/models/Showtime");
 
-class MovieService {
+const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
 
-  // ================= FIND GENRES =================
+class MovieService {
   async findGenres(genreIds) {
+    const ids = Array.isArray(genreIds) ? genreIds : [];
+    if (ids.length === 0) return [];
+
     const genres = await Genre.find({
-      _id: { $in: genreIds }
+      $or: [
+        { UUID: { $in: ids } },
+        { _id: { $in: ids.filter(isObjectId).map((id) => new mongoose.Types.ObjectId(id)) } },
+      ],
     });
 
-    if (genres.length !== genreIds.length) {
+    if (genres.length !== ids.length) {
       throw new Error("One or more genres not found");
     }
 
-    return genres.map(g => g._id);
+    return genres;
   }
 
-  // ================= CREATE =================
   async createMovie(data) {
     const genres = await this.findGenres(data.genreIds);
-
-    return await Movie.create({
+    const movie = new Movie({
       title: data.title,
       description: data.description,
       duration: data.duration,
@@ -32,116 +37,93 @@ class MovieService {
       posterUrl: data.posterUrl,
       trailerUrl: data.trailerUrl,
       status: data.status,
-      genres
+      genres: genres.map((g) => g._id),
     });
+
+    return movie.save();
   }
 
-  // ================= GET ALL =================
   async getAllMovies() {
-    return await Movie.find()
-      .populate("genres");
+    return Movie.find().populate("genres");
   }
 
-  // ================= GET BY ID =================
   async getMovieById(id) {
-    const movie = await Movie.findById(id)
-      .populate("genres");
+    const movie = await Movie.findOne({
+      $or: [
+        { UUID: id },
+        ...(isObjectId(id) ? [{ _id: id }] : []),
+      ],
+    }).populate("genres");
 
     if (!movie) throw new Error("Movie not found");
-
     return movie;
   }
 
-  // ================= GET BY UUID =================
   async getMovieByUUID(uuid) {
     const movie = await Movie.findOne({ UUID: uuid })
       .populate("genres");
 
     if (!movie) throw new Error("Movie not found");
 
-    // 🔥 lấy showtime riêng (Mongo không auto relation)
+    const now = new Date();
     const showtimes = await Showtime.find({ movie: movie._id })
       .populate("hall");
 
-    const now = new Date();
-
-    const resultShowtimes = await Promise.all(
+    const showtimeStats = await Promise.all(
       showtimes.map(async (s) => {
-
-        // tổng ghế
-        const totalSeats = await Seat.countDocuments({
-          hall: s.hall._id
-        });
-
-        // ghế đã bán
-        const soldSeats = await Ticket.countDocuments({
-          showtime: s._id
-        });
-
-        // ghế đang giữ
+        const totalSeats = await Seat.countDocuments({ hall: s.hall._id });
+        const soldSeats = await Ticket.countDocuments({ showtime: s._id });
         const holdingSeats = await SeatHold.countDocuments({
           showtime: s._id,
-          expiresAt: { $gt: now }
+          expiresAt: { $gt: now },
         });
 
-        const availableSeats =
-          totalSeats - soldSeats - holdingSeats;
+        const availableSeats = totalSeats - soldSeats - holdingSeats;
 
         return {
           UUID: s.UUID,
           startTime: s.startTime,
           endTime: s.endTime,
           hall: {
-            name: s.hall.name,
-            capacity: s.hall.capacity
+            name: s.hall?.name,
+            capacity: s.hall?.capacity,
           },
           totalSeats,
-          availableSeats
+          availableSeats,
         };
       })
     );
 
     return {
       ...movie.toObject(),
-      showtimes: resultShowtimes
+      showtimes: showtimeStats,
     };
   }
 
-  // ================= UPDATE =================
   async updateMovie(id, data) {
-    const updateData = { ...data };
+    const movie = await this.getMovieById(id);
 
     if (data.genreIds) {
-      updateData.genres = await this.findGenres(data.genreIds);
+      const genres = await this.findGenres(data.genreIds);
+      movie.genres = genres.map((g) => g._id);
     }
 
-    if (data.releaseDate) {
-      updateData.releaseDate = new Date(data.releaseDate);
-    }
+    if (data.title) movie.title = data.title;
+    if (data.description !== undefined) movie.description = data.description;
+    if (data.duration !== undefined) movie.duration = Number(data.duration);
+    if (data.releaseDate) movie.releaseDate = new Date(data.releaseDate);
+    if (data.posterUrl !== undefined) movie.posterUrl = data.posterUrl;
+    if (data.trailerUrl !== undefined) movie.trailerUrl = data.trailerUrl;
+    if (data.status) movie.status = data.status;
 
-    const movie = await Movie.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
-    );
-
-    if (!movie) throw new Error("Movie not found");
-
-    return movie;
+    return movie.save();
   }
 
-  // ================= DELETE (SOFT) =================
   async deleteMovie(id) {
-    const movie = await Movie.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
-
-    if (!movie) throw new Error("Movie not found");
-
-    return movie;
+    const movie = await this.getMovieById(id);
+    movie.isActive = false;
+    return movie.save();
   }
 }
 
-module.exports = { MovieService };
+module.exports = MovieService;

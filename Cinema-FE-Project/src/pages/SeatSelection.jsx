@@ -20,10 +20,14 @@ export default function SeatSelection({ socket, onNext, savedSeats }) {
 
         seatService.getSeatsByShowtime(uuid)
             .then((payload) => {
+                console.log("🪑 Payload từ API:", payload); // 🔥 log toàn bộ payload
+                console.log("🪑 Chỉ seats:", payload.seats); // 🔥 log riêng mảng seats
 
                 const sortedSeats = [...payload.seats].sort((a, b) =>
                     a.seatNumber.localeCompare(b.seatNumber, undefined, { numeric: true })
                 );
+
+                console.log("🪑 Seats đã sort:", sortedSeats); // 🔥 log sau khi sort
 
                 setSeatData({
                     movie: payload.movie,

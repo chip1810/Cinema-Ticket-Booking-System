@@ -1,99 +1,69 @@
+const mongoose = require("mongoose");
 const Voucher = require("../models/Voucher");
 const VoucherUsage = require("../models/VoucherUsage");
 
-class VoucherService {
+const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
 
-  // ================= CREATE =================
-  async create(data) {
-    if (new Date(data.startDate) >= new Date(data.endDate)) {
+class VoucherService {
+  async create(dto) {
+    if (new Date(dto.startDate) >= new Date(dto.endDate)) {
       throw new Error("Start date must be before end date");
     }
 
-    const existing = await Voucher.findOne({
-      code: data.code.toUpperCase()
-    });
-
-    if (existing) {
-      throw new Error("Voucher code already exists");
-    }
+    const code = dto.code?.trim().toUpperCase();
+    const existing = await Voucher.findOne({ code });
+    if (existing) throw new Error("Voucher code already exists");
 
     const voucher = await Voucher.create({
-      ...data,
-      code: data.code.toUpperCase(),
-      startDate: new Date(data.startDate),
-      endDate: new Date(data.endDate),
-      usedCount: 0,
+      ...dto,
+      code,
+      startDate: new Date(dto.startDate),
+      endDate: new Date(dto.endDate),
     });
 
     return voucher;
   }
 
-  // ================= GET ALL =================
   async findAll() {
-    return await Voucher.find().sort({ createdAt: -1 });
+    return Voucher.find().sort({ createdAt: -1 });
   }
 
-  // ================= GET BY UUID =================
   async findByUUID(uuid) {
-    const voucher = await Voucher.findOne({ uuid });
-
-    if (!voucher) {
-      throw new Error("Voucher not found");
-    }
-
+    const voucher = await Voucher.findOne({ UUID: uuid });
+    if (!voucher) throw new Error("Voucher not found");
     return voucher;
   }
 
-  // ================= GET BY CODE =================
   async findByCode(code) {
-    const voucher = await Voucher.findOne({
-      code: code.trim().toUpperCase()
-    });
-
-    if (!voucher) {
-      throw new Error("Voucher not found");
-    }
-
+    const voucher = await Voucher.findOne({ code: code.trim().toUpperCase() });
+    if (!voucher) throw new Error("Voucher not found");
     return voucher;
   }
 
-  // ================= UPDATE =================
-  async update(uuid, data) {
+  async update(uuid, dto) {
     const voucher = await this.findByUUID(uuid);
 
-    if (data.startDate && data.endDate) {
-      if (new Date(data.startDate) >= new Date(data.endDate)) {
+    if (dto.startDate && dto.endDate) {
+      if (new Date(dto.startDate) >= new Date(dto.endDate)) {
         throw new Error("Start date must be before end date");
       }
     }
 
-    const updated = await Voucher.findOneAndUpdate(
-      { uuid },
-      {
-        ...data,
-        startDate: data.startDate
-          ? new Date(data.startDate)
-          : voucher.startDate,
-        endDate: data.endDate
-          ? new Date(data.endDate)
-          : voucher.endDate,
-      },
-      { new: true }
-    );
+    Object.assign(voucher, {
+      ...dto,
+      code: dto.code ? dto.code.trim().toUpperCase() : voucher.code,
+      startDate: dto.startDate ? new Date(dto.startDate) : voucher.startDate,
+      endDate: dto.endDate ? new Date(dto.endDate) : voucher.endDate,
+    });
 
-    return updated;
+    return voucher.save();
   }
 
-  // ================= DELETE =================
   async delete(uuid) {
-    const voucher = await Voucher.findOneAndDelete({ uuid });
-
-    if (!voucher) {
-      throw new Error("Voucher not found");
-    }
+    const voucher = await this.findByUUID(uuid);
+    await Voucher.deleteOne({ _id: voucher._id });
   }
 
-  // ================= APPLY =================
   async apply(dto, userId) {
     let voucher;
 
@@ -102,86 +72,69 @@ class VoucherService {
     } else if (dto.code && dto.code.trim()) {
       voucher = await this.findByCode(dto.code);
     } else {
-      throw new Error("Cần có voucherUUID hoặc code");
+      throw new Error("Can co voucherUUID hoac code");
     }
 
     const now = new Date();
 
-    if (!voucher.isActive) {
-      throw new Error("Voucher is inactive");
-    }
-
-    if (now < voucher.startDate || now > voucher.endDate) {
-      throw new Error("Voucher expired");
-    }
-
-    if (
-      voucher.usageLimit > 0 &&
-      voucher.usedCount >= voucher.usageLimit
-    ) {
+    if (!voucher.isActive) throw new Error("Voucher is inactive");
+    if (now < voucher.startDate || now > voucher.endDate) throw new Error("Voucher expired");
+    if (voucher.usageLimit > 0 && voucher.usedCount >= voucher.usageLimit) {
       throw new Error("Voucher usage exceeded");
     }
 
-    // ✅ per user limit
-    const usageCount = await VoucherUsage.countDocuments({
-      voucherId: voucher._id,
-      userId
-    });
+    const userObjectId = isObjectId(userId) ? new mongoose.Types.ObjectId(userId) : null;
+    if (userObjectId) {
+      const usageCount = await VoucherUsage.countDocuments({
+        voucher: voucher._id,
+        user: userObjectId,
+      });
 
-    if (usageCount >= voucher.perUserLimit) {
-      throw new Error("User exceeded voucher usage limit");
+      if (usageCount >= voucher.perUserLimit) {
+        throw new Error("User exceeded voucher usage limit");
+      }
     }
 
-    if (
-      voucher.minOrderValue &&
-      dto.totalAmount < Number(voucher.minOrderValue)
-    ) {
+    const totalAmount = Number(dto.totalAmount);
+    if (Number.isNaN(totalAmount)) throw new Error("Invalid totalAmount");
+
+    if (voucher.minOrderValue && totalAmount < Number(voucher.minOrderValue)) {
       throw new Error("Order value not enough");
     }
 
     let discount = 0;
-
     if (voucher.type === "PERCENTAGE") {
-      discount = (dto.totalAmount * Number(voucher.value)) / 100;
-
-      if (
-        voucher.maxDiscountAmount &&
-        discount > Number(voucher.maxDiscountAmount)
-      ) {
+      discount = (totalAmount * Number(voucher.value)) / 100;
+      if (voucher.maxDiscountAmount && discount > Number(voucher.maxDiscountAmount)) {
         discount = Number(voucher.maxDiscountAmount);
       }
     } else {
       discount = Number(voucher.value);
     }
 
-    const finalAmount = Math.max(dto.totalAmount - discount, 0);
+    const finalAmount = Math.max(totalAmount - discount, 0);
 
     return {
-      originalAmount: dto.totalAmount,
+      originalAmount: totalAmount,
       discountAmount: discount,
       finalAmount,
     };
   }
 
-  // ================= INCREASE USED COUNT =================
   async increaseUsedCount(uuid, userId) {
     const voucher = await this.findByUUID(uuid);
 
-    if (
-      voucher.usageLimit > 0 &&
-      voucher.usedCount >= voucher.usageLimit
-    ) {
+    if (voucher.usageLimit > 0 && voucher.usedCount >= voucher.usageLimit) {
       throw new Error("Voucher exhausted");
     }
 
     voucher.usedCount += 1;
     await voucher.save();
 
-    await VoucherUsage.create({
-      voucherId: voucher._id,
-      userId
-    });
+    if (isObjectId(userId)) {
+      await VoucherUsage.create({ voucher: voucher._id, user: userId });
+    }
   }
 }
 
-module.exports = { VoucherService };
+module.exports = VoucherService;

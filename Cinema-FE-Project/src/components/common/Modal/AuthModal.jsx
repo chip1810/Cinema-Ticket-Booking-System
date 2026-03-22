@@ -135,7 +135,16 @@ export default function AuthModal({ isOpen, onClose, origin }) {
                     />
 
                     {isRegister && (
-                        <NetflixInput label="Xác nhận mật khẩu" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} />
+                        <NetflixInput
+                            label="Xác nhận mật khẩu"
+                            name="confirmPassword"
+                            type="password"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            showEye={true}
+                            showPassword={showPassword}
+                            setShowPassword={setShowPassword}
+                        />
                     )}
 
                     <button

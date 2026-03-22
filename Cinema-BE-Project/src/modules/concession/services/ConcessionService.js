@@ -1,65 +1,50 @@
+const mongoose = require("mongoose");
 const Concession = require("../models/Concession");
 
+const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
+
+const findByIdOrUUID = async (id) => {
+  const item = await Concession.findOne({
+    $or: [
+      { UUID: id },
+      ...(isObjectId(id) ? [{ _id: id }] : []),
+    ],
+  });
+  if (!item) throw new Error("Concession not found");
+  return item;
+};
+
 class ConcessionService {
-
-  // ➕ CREATE
   async create(data) {
-    return await Concession.create(data);
+    return Concession.create(data);
   }
 
-  // 📋 GET ALL
   async getAll() {
-    return await Concession.find()
-      .sort({ type: 1, name: 1 }); // ASC
+    return Concession.find().sort({ type: 1, name: 1 });
   }
 
-  // 🔍 GET BY ID (Mongo dùng _id)
   async getById(id) {
-    const item = await Concession.findById(id);
-
-    if (!item) throw new Error("Concession not found");
-
-    return item;
+    return findByIdOrUUID(id);
   }
 
-  // ✏️ UPDATE
   async update(id, data) {
-    const item = await Concession.findByIdAndUpdate(
-      id,
-      data,
-      { new: true }
-    );
-
-    if (!item) throw new Error("Concession not found");
-
-    return item;
+    const item = await findByIdOrUUID(id);
+    Object.assign(item, data);
+    return item.save();
   }
 
-  // 🗑 DELETE
   async delete(id) {
-    const item = await Concession.findByIdAndDelete(id);
-
-    if (!item) throw new Error("Concession not found");
-
+    const item = await findByIdOrUUID(id);
+    await Concession.deleteOne({ _id: item._id });
     return item;
   }
 
-  // 📦 UPDATE STOCK
   async updateStock(id, quantity) {
-    if (quantity < 0) {
-      throw new Error("Stock quantity cannot be negative");
-    }
-
-    const item = await Concession.findByIdAndUpdate(
-      id,
-      { stockQuantity: quantity },
-      { new: true }
-    );
-
-    if (!item) throw new Error("Concession not found");
-
-    return item;
+    const item = await findByIdOrUUID(id);
+    if (quantity < 0) throw new Error("Stock quantity cannot be negative");
+    item.stockQuantity = quantity;
+    return item.save();
   }
 }
 
-module.exports = { ConcessionService };
+module.exports = ConcessionService;

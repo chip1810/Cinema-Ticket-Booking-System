@@ -1,6 +1,7 @@
 // models/PricingRule.js
 const { Schema, model, Types } = require("mongoose");
 const SeatType = require("./enums/SeatType");
+const mongoose = require("mongoose");
 
 const PricingRuleSchema = new Schema(
   {
@@ -36,6 +37,6 @@ PricingRuleSchema.index(
   { unique: true }
 );
 
-const PricingRule = model("PricingRule", PricingRuleSchema);
+const PricingRule = mongoose.models.PricingRule || mongoose.model('PricingRule', PricingRuleSchema);
 
 module.exports = PricingRule;

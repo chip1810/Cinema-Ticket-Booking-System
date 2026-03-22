@@ -1,4 +1,3 @@
-// app.js
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -6,14 +5,6 @@ require("dotenv").config();
 
 const { connectMongo } = require("./mongo");
 
-// Routes
-const staffRouter = require("./modules/staff/routes/StaffRouter");
-const seatRouter = require("./modules/seat/routes/SeatRoute");
-const adminRoutes = require("./modules/admin/routes/admin.routes");
-const showtimeRoutes = require("./modules/showtime/routes/showtimeRoutes");
-const voucherRoutes = require("./modules/voucher/routes/voucherRoutes");
-const concessionRoutes = require("./modules/concession/routes/concessionRoutes");
-const orderRoutes = require("./modules/order/routes/orderRoutes");
 
 // Controllers
 const AuthController = require("./modules/auth/controllers/AuthController");
@@ -25,15 +16,23 @@ const PricingManagerController = require("./controllers/PricingManagerController
 const NewsController = require("./controllers/NewsController");
 const BannerController = require("./controllers/BannerController");
 const DashboardController = require("./controllers/DashboardController");
+const staffRouter = require("./modules/staff/routes/StaffRouter");
+const seatRouter = require("./modules/seat/routes/SeatRoute");
+const adminRoutes = require("./modules/admin/routes/admin.routes");
+const showtimeRoutes = require("./modules/showtime/routes/showtimeRoutes");
+const voucherRoutes = require("./modules/voucher/routes/voucherRoutes");
+const concessionRoutes = require("./modules/concession/routes/concessionRoutes");
+const orderRoutes = require("./modules/order/routes/orderRoutes");
+
+// Seed entities
+const Hall = require("./modules/hall/models/Hall");
+const Genre = require("./modules/genre/models/Genre");
 
 const app = express();
-
-// Middleware
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
 
-// Routes
 app.use("/api/showtimes", showtimeRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/orders", orderRoutes);
@@ -84,7 +83,7 @@ app.put("/api/manager/news/:id", (req, res) => news.update(req, res));
 app.patch("/api/manager/news/:id/publish", (req, res) => news.togglePublish(req, res));
 app.delete("/api/manager/news/:id", (req, res) => news.delete(req, res));
 
-// --- Banner ---
+// --- Banner Routes ---
 app.get("/api/banners", (req, res) => banner.getAll(req, res));
 app.post("/api/manager/banners", (req, res) => banner.create(req, res));
 app.put("/api/manager/banners/:id", (req, res) => banner.update(req, res));
@@ -99,7 +98,7 @@ app.get("/api/manager/dashboard/movies", (req, res) => dashboard.getMovieStats(r
 app.get("/api/manager/halls", (req, res) => hallManager.getAllHalls(req, res));
 app.get("/api/manager/halls/:id", (req, res) => hallManager.getHallById(req, res));
 app.post("/api/manager/halls", (req, res) => hallManager.createHall(req, res));
-app.put("/api/manager/halls/:id", (req, res) => hallManager.updateHall(req, res));
+app.put("/api/manager/halls/:id", (req, res) => hallManager.update(req, res));
 app.delete("/api/manager/halls/:id", (req, res) => hallManager.deleteHall(req, res));
 
 // --- Pricing rules ---
@@ -107,9 +106,39 @@ app.get("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.getBySh
 app.post("/api/manager/pricing", (req, res) => pricingManager.setRules(req, res));
 app.delete("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.deleteByShowtime(req, res));
 
-// --- Health check ---
-app.get("/", (req, res) => {
-  res.json({ status: "ok", message: "Cinema API running" });
+// --- Seed Route (Dev only) ---
+app.post("/api/seed", async (_req, res) => {
+  try {
+    const hallCount = await Hall.countDocuments();
+    const genreCount = await Genre.countDocuments();
+
+    if (hallCount === 0) {
+      await Hall.insertMany([
+        { name: "Cinema 1", capacity: 100, type: "Standard" },
+        { name: "Cinema 2", capacity: 80, type: "Standard" },
+        { name: "IMAX Hall", capacity: 200, type: "IMAX" },
+      ]);
+    }
+
+    if (genreCount === 0) {
+      await Genre.insertMany([
+        { name: "Action" },
+        { name: "Drama" },
+        { name: "Comedy" },
+        { name: "Horror" },
+        { name: "Sci-Fi" },
+      ]);
+    }
+
+    return res.json({ message: "Seed data created successfully" });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
 });
 
-module.exports = app;
+// --- Health Check ---
+app.get("/", (_req, res) =>
+  res.json({ status: "ok", message: "Cinema API running" })
+);
+
+module.exports = { app };

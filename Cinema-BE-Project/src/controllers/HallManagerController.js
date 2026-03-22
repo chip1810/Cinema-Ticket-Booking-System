@@ -1,16 +1,11 @@
-const hallManagerService = require("../services/HallManagerService");
-const { ApiResponse } = require("../utils/ApiResponse");
+const { hallManagerService } = require("../services/HallManagerService");
+const ApiResponse = require("../utils/ApiResponse");
 
-const ok = (res, data, msg, code = 200) =>
-  ApiResponse.success(res, data, msg, code);
-
-const fail = (res, e, code = 400) =>
-  ApiResponse.error(res, e.message || e, code);
+const ok = (res, data, msg, code = 200) => ApiResponse.success(res, data, msg, code);
+const fail = (res, e, code = 400) => ApiResponse.error(res, e.message ?? e, code);
 
 class HallManagerController {
-
-  // 📋 GET ALL HALLS
-  async getAllHalls(req, res) {
+  async getAllHalls(_req, res) {
     try {
       return ok(res, await hallManagerService.getAllHalls(), "Halls fetched");
     } catch (e) {
@@ -18,54 +13,32 @@ class HallManagerController {
     }
   }
 
-  // 🔍 GET HALL BY ID (Mongo dùng _id)
   async getHallById(req, res) {
     try {
-      return ok(
-        res,
-        await hallManagerService.getHallById(req.params.id),
-        "Hall fetched"
-      );
+      return ok(res, await hallManagerService.getHallById(req.params.id), "Hall fetched");
     } catch (e) {
       return fail(res, e, 404);
     }
   }
 
-  // ➕ CREATE HALL
   async createHall(req, res) {
     try {
-      const { name, type, capacity } = req.body;
-
-      if (!name || !type || !capacity) {
-        return fail(res, { message: "name, type, capacity required" });
-      }
-
-      return ok(
-        res,
-        await hallManagerService.createHall({ name, type, capacity }),
-        "Hall created",
-        201
-      );
-
+      const { name, type, capacity } = req.body || {};
+      if (!name || !capacity) return fail(res, { message: "name and capacity are required" });
+      return ok(res, await hallManagerService.createHall({ name, type, capacity }), "Hall created", 201);
     } catch (e) {
       return fail(res, e);
     }
   }
 
-  // ✏️ UPDATE HALL
   async updateHall(req, res) {
     try {
-      return ok(
-        res,
-        await hallManagerService.updateHall(req.params.id, req.body),
-        "Hall updated"
-      );
+      return ok(res, await hallManagerService.updateHall(req.params.id, req.body || {}), "Hall updated");
     } catch (e) {
-      return fail(res, e);
+      return fail(res, e, 404);
     }
   }
 
-  // 🗑 DELETE HALL
   async deleteHall(req, res) {
     try {
       await hallManagerService.deleteHall(req.params.id);
@@ -75,33 +48,24 @@ class HallManagerController {
     }
   }
 
-  // 🎟 SET SEAT LAYOUT
   async setSeatLayout(req, res) {
     try {
-      const result = await hallManagerService.setSeatLayout(
-        req.params.id,
-        req.body.seats
-      );
-
-      return ok(res, result, "Seat layout saved", 201);
-
+      const seats = req.body?.seats;
+      if (!Array.isArray(seats)) return fail(res, { message: "seats[] is required" });
+      const result = await hallManagerService.setSeatLayout(req.params.id, seats);
+      return ok(res, result, "Seat layout updated", 201);
     } catch (e) {
       return fail(res, e);
     }
   }
 
-  // 📋 GET SEAT LAYOUT
   async getSeatLayout(req, res) {
     try {
-      return ok(
-        res,
-        await hallManagerService.getSeatLayout(req.params.id),
-        "Seat layout fetched"
-      );
+      return ok(res, await hallManagerService.getSeatLayout(req.params.id), "Seat layout fetched");
     } catch (e) {
       return fail(res, e, 404);
     }
   }
 }
 
-module.exports = { HallManagerController };
+module.exports = HallManagerController;

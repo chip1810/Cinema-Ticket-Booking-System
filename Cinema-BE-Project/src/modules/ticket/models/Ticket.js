@@ -1,44 +1,20 @@
-import { Schema, model, Types } from "mongoose";
+const { Schema, model, Types } = require("mongoose");
 
-// Schema cho ticket
-const ticketSchema = new Schema({
+const TicketSchema = new Schema({
   UUID: {
     type: String,
     required: true,
     unique: true,
-    default: () => new Types.ObjectId().toString(), // tạo UUID tự động
+    default: () => new Types.ObjectId().toString(),
   },
-  showtime: {
-    type: Types.ObjectId,
-    ref: "Showtime",
-    required: true,
-  },
-  seat: {
-    type: Types.ObjectId,
-    ref: "Seat",
-    required: true,
-  },
-  order: {
-    type: Types.ObjectId,
-    ref: "Order",
-    required: true,
-  },
-  user: {
-    type: Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  price: {
-    type: Number,
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  showtime: { type: Types.ObjectId, ref: "Showtime", required: true },
+  seat: { type: Types.ObjectId, ref: "Seat", required: true },
+  order: { type: Types.ObjectId, ref: "Order", required: true },
+  user: { type: Types.ObjectId, ref: "User", required: true },
+  price: { type: Number, required: true },
+  createdAt: { type: Date, default: Date.now },
 });
 
-// 🔹 Index để đảm bảo 1 ghế / showtime chỉ có 1 ticket (unique)
-ticketSchema.index({ showtime: 1, seat: 1 }, { unique: true });
+TicketSchema.index({ showtime: 1, seat: 1 }, { unique: true });
 
-export const Ticket = model("Ticket", ticketSchema);
+module.exports = model("Ticket", TicketSchema);

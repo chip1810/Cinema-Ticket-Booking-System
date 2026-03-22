@@ -1,15 +1,10 @@
-const bcrypt = require("bcryptjs");
 const { User, UserRole } = require("../../auth/models/User");
+const bcrypt = require("bcryptjs");
 
 class StaffManagementService {
-
-  // 🆕 CREATE STAFF
   async createStaff(data) {
     const existing = await User.findOne({ email: data.email });
-
-    if (existing) {
-      throw new Error("Email already exists");
-    }
+    if (existing) throw new Error("Email already exists");
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -19,23 +14,17 @@ class StaffManagementService {
       fullName: data.fullName,
       phoneNumber: data.phoneNumber,
       role: UserRole.STAFF,
-      isBlocked: false
+      isBlocked: false,
     });
 
-    // ❌ không trả password
-    const { password, ...safeStaff } = staff.toObject();
-
-    return safeStaff;
+    const staffObj = staff.toObject();
+    delete staffObj.password;
+    return staffObj;
   }
 
-  // 📋 GET ALL STAFF
   async getAllStaff() {
-    const staffs = await User.find({ role: UserRole.STAFF })
-      .select("-password -resetPasswordOTP -resetPasswordExpires") // bỏ field nhạy cảm
-      .lean();
-
-    return staffs;
+    return User.find({ role: UserRole.STAFF }).select("UUID email fullName phoneNumber isBlocked");
   }
 }
 
-module.exports = { StaffManagementService };
+module.exports = StaffManagementService;

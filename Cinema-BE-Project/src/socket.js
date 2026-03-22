@@ -1,4 +1,3 @@
-// socket.js
 const { Server } = require("socket.io");
 
 let io;
@@ -9,15 +8,15 @@ const initSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("🟢 socket connected:", socket.id);
+    console.log("socket connected:", socket.id);
 
     socket.onAny((event, ...args) => {
-      console.log("📡 event received:", event, args);
+      console.log("event received:", event, args);
     });
 
     socket.on("join-showtime", (showtimeUUID) => {
       socket.join(showtimeUUID);
-      console.log(`🎬 ${socket.id} joined room ${showtimeUUID}`);
+      console.log(`${socket.id} joined room ${showtimeUUID}`);
     });
   });
 
@@ -31,7 +30,4 @@ const getIO = () => {
   return io;
 };
 
-module.exports = {
-  initSocket,
-  getIO,
-};
+module.exports = { initSocket, getIO };

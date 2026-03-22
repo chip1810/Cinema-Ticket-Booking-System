@@ -1,16 +1,15 @@
-const express = require("express");
-const { UserManagementController } = require("../controllers/UserManagementController");
-const { StaffManagementController } = require("../controllers/StaffManagementController");
-const authenticate = require("../../../middlewares/authenticate");
+const { Router } = require("express");
+const UserManagementController = require("../controllers/UserManagementController");
+const StaffManagementController = require("../controllers/StaffManagementController");
+const authenticate = require("../../../middlewares/authenticate.js");
 const authorize = require("../../../middlewares/roleMiddlewares");
 const { UserRole } = require("../../auth/models/User");
 
-const router = express.Router();
+const router = Router();
 
 const userController = new UserManagementController();
 const staffController = new StaffManagementController();
 
-// ===== Manage Users =====
 router.get(
   "/users",
   authenticate,
@@ -25,7 +24,6 @@ router.patch(
   (req, res) => userController.blockUser(req, res)
 );
 
-// ===== Manage Staff =====
 router.post(
   "/staff",
   authenticate,

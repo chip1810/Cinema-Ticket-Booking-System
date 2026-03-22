@@ -2,7 +2,7 @@
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/cinema";
+const MONGO_URI = process.env.MONGO_URI;
 
 const connectMongo = async () => {
   try {
