@@ -5,6 +5,7 @@ const HallSchema = new Schema({
   name: { type: String, required: true, unique: true },
   capacity: { type: Number, required: true },
   type: { type: String },
+  branch: { type: Types.ObjectId, ref: "CinemaBranch" },
   showtimes: [{ type: Types.ObjectId, ref: "Showtime" }],
   seats: [{ type: Types.ObjectId, ref: "Seat" }],
 }, { timestamps: true });

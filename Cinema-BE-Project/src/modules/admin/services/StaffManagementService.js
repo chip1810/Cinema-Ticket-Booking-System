@@ -8,12 +8,17 @@ class StaffManagementService {
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
+    const role =
+      data.role && [UserRole.STAFF, UserRole.MANAGER].includes(data.role)
+        ? data.role
+        : UserRole.STAFF;
+
     const staff = await User.create({
       email: data.email,
       password: hashedPassword,
       fullName: data.fullName,
       phoneNumber: data.phoneNumber,
-      role: UserRole.STAFF,
+      role,
       isBlocked: false,
     });
 
@@ -23,7 +28,8 @@ class StaffManagementService {
   }
 
   async getAllStaff() {
-    return User.find({ role: UserRole.STAFF }).select("UUID email fullName phoneNumber isBlocked");
+    return User.find({ role: { $in: [UserRole.STAFF, UserRole.MANAGER] } })
+      .select("UUID email fullName phoneNumber role isBlocked");
   }
 }
 
