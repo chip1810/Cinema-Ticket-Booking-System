@@ -12,12 +12,8 @@ import { User } from "../../auth/models/User";
 import { Ticket } from "../../ticket/models/Ticket";
 import { OrderItem } from "../../order_item/models/OrderItem";
 import { Voucher } from "../../voucher/models/Voucher";
+import { OrderStatus } from "./enums/OrderStatus";
 
-export enum OrderStatus {
-  PENDING = "PENDING",
-  PAID = "PAID",
-  CANCELLED = "CANCELLED",
-}
 
 @Entity("orders")
 export class Order {

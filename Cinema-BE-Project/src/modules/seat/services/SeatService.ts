@@ -6,7 +6,7 @@ import { Ticket } from "../../ticket/models/Ticket";
 import { getIO } from "../../../socket";
 import { Order } from "../../order/models/Order";
 import { PricingRule } from "../../pricing_rule/models/PricingRule";
-import { OrderStatus } from "../../order/models/Order";
+import { OrderStatus } from "../../order/models/enums/OrderStatus";
 import { Concession } from "../../concession/models/Concession";
 import { OrderItem } from "../../order_item/models/OrderItem";
 import { Voucher } from "../../voucher/models/Voucher";
