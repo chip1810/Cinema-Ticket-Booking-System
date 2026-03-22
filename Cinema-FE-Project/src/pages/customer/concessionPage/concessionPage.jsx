@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ProgressBar }  from '../../../components/concession/ProgressBar';
+import { ProgressBar } from '../../../components/concession/ProgressBar';
 import { HeroSnackCard } from '../../../components/concession/HeroSnackCard';
 import { SnackCard } from '../../../components/concession/SnackCard';
 import { OrderSummary } from '../../../components/concession/OrderSummary';
@@ -110,11 +110,23 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
   const totalPayable = ticketTotal + snacksTotal;
 
   const handlePayment = () => {
+    if (!onNext) return;
+
+    const snacksPayload = addedSnacks
+      .filter((s) => s.quantity > 0)
+      .map((s) => ({
+        id: s.id,
+        UUID: s.UUID,      // để BookingFlow map sang concessionUUID
+        name: s.name,
+        quantity: s.quantity,
+        price: s.price,
+      }));
+
     onNext({
       ...bookingData,
-      snacks: addedSnacks,
+      snacks: snacksPayload,
       snacksTotal,
-      finalTotal: totalPayable
+      finalTotal: totalPayable,
     });
   };
 
@@ -131,9 +143,9 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
     <div className="flex flex-col min-h-screen bg-[#050505] text-white font-sans">
       {/* THANH THỜI GIAN ĐẾM NGƯỢC (STICKY) */}
       <div className="bg-red-600/10 border-b border-red-600/20 py-2 text-center backdrop-blur-md">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">
-             Ghế của bạn được giữ trong: <span className="text-white font-mono text-sm ml-2">{timeLeft}</span>
-          </p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">
+          Ghế của bạn được giữ trong: <span className="text-white font-mono text-sm ml-2">{timeLeft}</span>
+        </p>
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">

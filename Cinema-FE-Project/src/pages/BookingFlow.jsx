@@ -4,6 +4,8 @@ import { io } from "socket.io-client";
 import { SOCKET_URL } from "../config/api";
 import SeatSelection from "./SeatSelection";
 import ConcessionPage from "./customer/concessionPage/ConcessionPage";
+import { seatService } from "../services/seatService";
+import { paymentService } from "../services/paymentService";
 
 export default function BookingFlow() {
     const { uuid } = useParams();
@@ -44,6 +46,42 @@ export default function BookingFlow() {
         setStep(1);
     };
 
+    const handleConcessionNext = async (finalOrder) => {
+        try {
+            const showtimeUUID = finalOrder?.showtime?.UUID;
+            const seatUUIDs = finalOrder?.selectedSeats || [];
+
+            const concessions = (finalOrder?.snacks || [])
+                .filter((s) => s.quantity > 0)
+                .map((s) => ({
+                    concessionUUID: s.UUID,
+                    quantity: s.quantity,
+                }));
+
+            if (!showtimeUUID || seatUUIDs.length === 0) {
+                throw new Error("Thiếu showtime hoặc ghế đã chọn");
+            }
+
+            // 1) lấy checkoutToken
+            const previewData = await seatService.checkoutPreview({
+                showtimeUUID,
+                seatUUIDs,
+                concessions,
+                voucherUUID: null,
+                voucherCode: null,
+            });
+
+            // 2) tạo link PayOS
+            const paymentData = await paymentService.createPayOSLink(previewData.checkoutToken);
+
+            // 3) redirect sang trang thanh toán
+            window.location.href = paymentData.checkoutUrl;
+        } catch (err) {
+            console.error("❌ Payment flow error:", err);
+            alert(err.message || "Không thể tạo thanh toán, vui lòng thử lại.");
+        }
+    };
+
     // 4️⃣ Tạo object bookingData an toàn
     const bookingDataSafe = seatData
         ? {
@@ -80,7 +118,7 @@ export default function BookingFlow() {
                     <ConcessionPage
                         bookingData={seatData} // đã bao gồm details, totalPrice, holdExpiresAt...
                         onBack={handleBackToSeats}
-                        onNext={(finalOrder) => console.log("Final order:", finalOrder)}
+                        onNext={handleConcessionNext}
                     />
                 </>
             )}

@@ -30,6 +30,7 @@ import VouchersPage from './pages/admin/VouchersPage/VouchersPage';
 import RevenueReportsPage from './pages/admin/RevenueReportsPage/RevenueReportsPage';
 import CustomerInsightsPage from './pages/admin/CustomerInsightsPage/CustomerInsightsPage';
 import SettingsPage from './pages/admin/SettingsPage/SettingsPage';
+import PaymentResultPage from './pages/PaymentResultPage';
 
 export default function App() {
   return (
@@ -72,6 +73,8 @@ export default function App() {
               <Route path="banners" element={<BannerManagementPage />} />
               <Route path="reviews" element={<ReviewModerationPage />} />
             </Route>
+
+            <Route path="/payment/result" element={<PaymentResultPage />} />
 
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />
