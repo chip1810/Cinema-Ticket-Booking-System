@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const isLoggedIn = Boolean(user?.token);
 
   const loginBtnRef = useRef(null);
   const menuRef = useRef(null);
@@ -44,17 +45,10 @@ export default function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
-<<<<<<< HEAD
-          <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Movies</a>
-          <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Venues</a>
-          <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Offers</a>
-          <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Membership</a>
-=======
           <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Movies</a>
           <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Venues</a>
           <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Offers</a>
           <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="/manager">Manager Portal</a>
->>>>>>> c928101b81c42adeb0de36af48334a24d7fe7300
         </nav>
       </div>
 
@@ -67,68 +61,6 @@ export default function Header() {
           <input
             className="bg-transparent border-none focus:outline-none text-sm text-slate-100 placeholder:text-slate-500 w-48"
             placeholder="Search movies..."
-<<<<<<< HEAD
-          />
-        </div>
-
-        {/* auth */}
-        {!user ? (
-          <button
-            ref={loginBtnRef}
-            onClick={() => {
-              const rect = loginBtnRef.current.getBoundingClientRect();
-
-              setModalPos({
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2
-              });
-
-              setShowAuth(true);
-            }}
-            className="flex items-center gap-2 text-slate-300 hover:text-white text-sm font-medium"
-          >
-            <LogIn className="w-4 h-4" /> Login
-          </button>
-        ) : (
-          <div ref={menuRef} className="relative">
-
-            {/* avatar */}
-            <button
-              onClick={() => setShowMenu((prev) => !prev)}
-              className="w-10 h-10 rounded-full bg-primary flex items-center justify-center hover:scale-105 transition"
-            >
-              <User className="text-white w-5 h-5" />
-            </button>
-
-            {/* dropdown */}
-            {showMenu && (
-              <div className="absolute right-0 mt-3 w-44 bg-slate-800 border border-white/10 rounded-xl shadow-xl overflow-hidden animate-fadeIn">
-
-                <button className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700">
-                  Profile
-                </button>
-
-                <button
-                  onClick={() => {
-                    logout();
-                    setShowMenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-slate-700"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
-
-              </div>
-            )}
-          </div>
-        )}
-
-        <button className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-full text-sm font-bold transition transform hover:scale-105">
-          Book Now
-        </button>
-
-=======
             type="text"
           />
         </div>
@@ -136,14 +68,20 @@ export default function Header() {
         <div className="flex items-center gap-4">
           {!isLoggedIn ? (
             <button
-              onClick={() => setIsLoggedIn(true)}
+              type="button"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setModalPos({ x: rect.left, y: rect.bottom });
+                setShowAuth(true);
+              }}
               className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-sm font-medium"
             >
               <LogIn className="w-4 h-4" /> Login
             </button>
           ) : (
             <button
-              onClick={() => setIsLoggedIn(false)}
+              type="button"
+              onClick={() => logout()}
               className="flex items-center gap-2 text-slate-300 hover:text-primary transition-colors text-sm font-medium"
             >
               <LogOut className="w-4 h-4" /> Logout
@@ -159,7 +97,6 @@ export default function Header() {
           className="w-10 h-10 rounded-full border-2 border-primary/20 bg-cover bg-center cursor-pointer"
           style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCTR36E75QaZ4nMQ6zq0qHGrvInEoUbrN6T0_Ryr3DcI8soQ2Pmnv1SNMYJHjDHb1Gy_dmsOoX2PHp-28d7uRFCVZDsn8_bfzzUwOjbBjMWnr3HV4WkGD_KlnvfD9o6Fuco1CyTRMTQDs-pIU_34MzckbbFiwXWxwPrIqrjD6kaREbFw0m4XdqFPKdEhoWWaYY9girSkbl8EYFzrfQPJVC1Nw5avcm1UxJhng-jSPbKSdwo9A5VcF4ubCb9oShF2CT3chsJT2EGfw')" }}
         />
->>>>>>> c928101b81c42adeb0de36af48334a24d7fe7300
       </div>
 
       <AuthModal

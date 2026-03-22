@@ -9,7 +9,6 @@ import { concessionService } from '../../../services/concessionService';
 const ConcessionPage = ({ bookingData, onNext, onBack }) => {
   const [snacks, setSnacks]   = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
   const [timeLeft, setTimeLeft] = useState(""); // State cho đồng hồ đếm ngược
 
   // 1. LOG ĐỂ KIỂM TRA DỮ LIỆU GHẾ
@@ -59,7 +58,6 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
       })
       .catch((err) => {
           console.error("❌ Lỗi fetch bắp nước:", err);
-          setError("Không thể tải danh sách bắp nước.");
       })
       .finally(() => setLoading(false));
   }, []);

@@ -33,25 +33,6 @@ import SettingsPage from './pages/admin/SettingsPage/SettingsPage';
 
 export default function App() {
   return (
-<<<<<<< HEAD
-    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-      <AuthProvider>
-
-        <Header />
-
-        <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/movies/:uuid" element={<MovieDetail />} />
-            <Route path="/booking/:uuid" element={<BookingFlow />} />
-          </Routes>
-        </main>
-
-        <Footer />
-
-      </AuthProvider>
-    </div>
-=======
     <Routes>
       {/* Landing Page Routes */}
       <Route path="/" element={
@@ -102,6 +83,5 @@ export default function App() {
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
->>>>>>> c928101b81c42adeb0de36af48334a24d7fe7300
   );
 }

@@ -1,6 +1,24 @@
 import axios from 'axios';
 
-const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
+/**
+ * Base URL gọi API:
+ * - Nếu có REACT_APP_API_URL trong .env → dùng (vd: http://localhost:5000/api khi BE chạy cổng 5000).
+ * - Dev không set env: dùng "/api" + "proxy" trong package.json → CRA chuyển tới http://localhost:3000
+ *   (tránh gọi nhầm vào chính dev server React → 404).
+ * - Production build: nên set REACT_APP_API_URL trỏ domain API thật.
+ */
+function resolveApiBaseURL() {
+    const env = process.env.REACT_APP_API_URL;
+    if (env && String(env).trim()) {
+        return String(env).replace(/\/$/, '');
+    }
+    if (process.env.NODE_ENV === 'development') {
+        return '/api';
+    }
+    return '/api';
+}
+
+const baseURL = resolveApiBaseURL();
 
 const apiClient = axios.create({
     baseURL,

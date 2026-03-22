@@ -1,12 +1,11 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import SeatSelection from "./SeatSelection";
-import ConcessionPage from "./customer/concessionPage/ConcessionPage";
+import ConcessionPage from "./customer/concessionPage/concessionPage";
 
 export default function BookingFlow() {
     const { uuid } = useParams();
-    const navigate = useNavigate();
 
     // Quản lý flow: 1 = Chọn ghế, 2 = Bắp nước, 3 = Thanh toán
     const [step, setStep] = useState(1);
