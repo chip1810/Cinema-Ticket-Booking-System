@@ -1,55 +1,44 @@
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    ManyToOne,
-    Column,
-    CreateDateColumn,
-    Unique,
-    Generated,
-    JoinColumn
-} from "typeorm";
-import { Showtime } from "../../showtime/models/Showtime";
-import { Seat } from "../../seat/models/Seat";
-import { User } from "../../auth/models/User";
-import { Order } from "../../order/models/Order";
+import { Schema, model, Types } from "mongoose";
 
-@Entity("tickets")
-@Unique(["showtimeId", "seatId"])
-export class Ticket {
-    @PrimaryGeneratedColumn()
-    id!: number;
+// Schema cho ticket
+const ticketSchema = new Schema({
+  UUID: {
+    type: String,
+    required: true,
+    unique: true,
+    default: () => new Types.ObjectId().toString(), // tạo UUID tự động
+  },
+  showtime: {
+    type: Types.ObjectId,
+    ref: "Showtime",
+    required: true,
+  },
+  seat: {
+    type: Types.ObjectId,
+    ref: "Seat",
+    required: true,
+  },
+  order: {
+    type: Types.ObjectId,
+    ref: "Order",
+    required: true,
+  },
+  user: {
+    type: Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  price: {
+    type: Number,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
-    @Column({ type: "uuid", unique: true })
-    @Generated("uuid")
-    UUID!: string;
+// 🔹 Index để đảm bảo 1 ghế / showtime chỉ có 1 ticket (unique)
+ticketSchema.index({ showtime: 1, seat: 1 }, { unique: true });
 
-    @Column()
-    showtimeId!: number;   // 👈 thêm cái này
-
-    @Column()
-    seatId!: number;       // 👈 thêm cái này
-
-    @ManyToOne(() => Showtime)
-    @JoinColumn({ name: "showtimeId" })
-    showtime!: Showtime;
-
-    @ManyToOne(() => Seat)
-    @JoinColumn({ name: "seatId" })
-    seat!: Seat;
-    @ManyToOne(() => Order, (order) => order.tickets, { onDelete: "CASCADE" })
-    order!: Order;
-
-    @Column("decimal", { precision: 10, scale: 2 })
-    price!: number;
-
-    @CreateDateColumn({ type: "timestamptz" })
-    createdAt!: Date;
-    
-    @Column()
-    userId!: number;
-
-    @ManyToOne(() => User)
-    @JoinColumn({ name: "userId" })
-    user!: User;
-
-}
+export const Ticket = model("Ticket", ticketSchema);

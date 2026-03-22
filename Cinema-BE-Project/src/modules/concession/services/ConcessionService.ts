@@ -1,4 +1,4 @@
-import { AppDataSource } from "../../../data-source";
+import { AppDataSource } from "../../../mongo";
 import { Concession } from "../models/Concession";
 import { CreateConcessionDTO } from "../dtos/CreateConcession.dto";
 

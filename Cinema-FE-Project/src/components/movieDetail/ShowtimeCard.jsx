@@ -9,7 +9,7 @@ export default function ShowtimeCard({ showtime }) {
 
   return (
     <Link
-      to={`/showtime/${showtime.UUID}`}
+      to={`/booking/${showtime.UUID}`}
       className="bg-gray-800 hover:bg-red-600 transition px-4 py-3 rounded-lg text-center min-w-[90px]"
     >
       <div className="text-lg font-semibold">

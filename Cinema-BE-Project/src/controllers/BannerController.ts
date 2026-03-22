@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AppDataSource } from "../data-source";
+import { AppDataSource } from "../mongo";
 import { Banner } from "../modules/banner/models/Banner";
 import { ApiResponse } from "../utils/ApiResponse";
 

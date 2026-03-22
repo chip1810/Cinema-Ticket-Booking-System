@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { ConcessionController } from "../controllers/ConcessionController";
-import { authenticate } from "../../../middlewares/authenticate";
+import { authenticate } from "../../../middlewares/authenticate.js";
 import { authorize } from "../../../middlewares/roleMiddlewares";
 import { UserRole } from "../../auth/models/User";
 

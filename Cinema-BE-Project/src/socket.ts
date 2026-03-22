@@ -8,14 +8,15 @@ export const initSocket = (server: any) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+    console.log("🟢 socket connected:", socket.id);
+
+    socket.onAny((event, ...args) => {
+      console.log("📡 event received:", event, args);
+    });
 
     socket.on("join-showtime", (showtimeUUID: string) => {
       socket.join(showtimeUUID);
-    });
-
-    socket.on("disconnect", () => {
-      console.log("User disconnected");
+      console.log(`🎬 ${socket.id} joined room ${showtimeUUID}`);
     });
   });
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { VoucherController } from "../controllers/VoucherController";
-import { authenticate } from "../../../middlewares/authenticate";
+import { authenticate } from "../../../middlewares/authenticate.js";
 import { authorize } from "../../../middlewares/roleMiddlewares";
 import { UserRole } from "../../auth/models/User";
 

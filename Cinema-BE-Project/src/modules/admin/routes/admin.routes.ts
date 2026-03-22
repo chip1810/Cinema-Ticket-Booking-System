@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { UserManagementController } from "../controllers/UserManagementController";
 import { StaffManagementController } from "../controllers/StaffManagementController";
-import { authenticate } from "../../../middlewares/authenticate";
+import { authenticate } from "../../../middlewares/authenticate.js";
 import { authorize } from "../../../middlewares/roleMiddlewares";
 import { UserRole } from "../../auth/models/User";
 

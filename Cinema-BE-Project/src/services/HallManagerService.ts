@@ -1,4 +1,4 @@
-import { AppDataSource } from "../data-source";
+import { AppDataSource } from "../mongo";
 import { Hall } from "../modules/hall/models/Hall";
 import { Seat } from "../modules/seat/models/Seat";
 import { SeatType } from "../modules/seat/models/enums/SeatType";

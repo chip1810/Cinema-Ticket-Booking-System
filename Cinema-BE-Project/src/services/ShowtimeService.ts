@@ -1,4 +1,4 @@
-import { AppDataSource } from "../data-source";
+import { AppDataSource } from "../mongo";
 import { Showtime } from "../modules/showtime/models/Showtime";
 import { Movie } from "../modules/movie/models/Movie";
 import { Hall } from "../modules/hall/models/Hall";

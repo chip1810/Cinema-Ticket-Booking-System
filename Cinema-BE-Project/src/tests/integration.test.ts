@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import request from "supertest";
 import { app } from "../app";
-import { AppDataSource } from "../data-source";
+import { AppDataSource } from "../mongo";
 
 beforeAll(async () => {
     if (!AppDataSource.isInitialized) {

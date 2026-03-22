@@ -1,35 +1,12 @@
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    OneToMany,
-    Generated
-} from "typeorm";
-import { Showtime } from "../../showtime/models/Showtime";
-import { Seat } from "../../seat/models/Seat";   // 👈 thêm
+import { Schema, model, Types } from "mongoose";
 
-@Entity("halls")
-export class Hall {
-  @PrimaryGeneratedColumn()
-  id!: number;
+const HallSchema = new Schema({
+  UUID: { type: String, unique: true, default: () => new Types.ObjectId().toString() },
+  name: { type: String, required: true, unique: true },
+  capacity: { type: Number, required: true },
+  type: { type: String },
+  showtimes: [{ type: Types.ObjectId, ref: "Showtime" }], // OneToMany relation
+  seats: [{ type: Types.ObjectId, ref: "Seat" }],         // OneToMany relation
+}, { timestamps: true });
 
-  @Column({ type: "uuid", unique: true })
-  @Generated("uuid")
-  UUID!: string;
-
-  @Column({ unique: true })
-  name!: string;
-
-  @Column("int")
-  capacity!: number;
-
-  @Column({ nullable: true })
-  type?: string;
-
-  @OneToMany(() => Showtime, (showtime) => showtime.hall)
-  showtimes!: Showtime[];
-
-  // 👇 THÊM RELATION NÀY
-  @OneToMany(() => Seat, (seat) => seat.hall)
-  seats!: Seat[];
-}
+export const Hall = model("Hall", HallSchema);

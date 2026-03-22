@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { seatService } from "../services/seatService";
-import { io } from "socket.io-client";
-
-export default function SeatSelection() {
+import useSeatSocket from "../hooks/useSeatSocket";
+export default function SeatSelection({ socket, onNext, savedSeats }) {
     const { uuid } = useParams();
     const [seatData, setSeatData] = useState({
         movie: null,
@@ -14,67 +13,29 @@ export default function SeatSelection() {
     });
     const [selectedSeats, setSelectedSeats] = useState([]);
 
+    useSeatSocket(socket, setSeatData, setSelectedSeats);
+
     useEffect(() => {
         if (!uuid) return;
 
-        // 1. Fetch dữ liệu lần đầu
-        seatService.getSeatsByShowtime(uuid).then((res) => {
-            const payload = res.data;
-            const sortedSeats = payload.seats.sort((a, b) =>
-                a.seatNumber.localeCompare(b.seatNumber, undefined, { numeric: true })
-            );
+        seatService.getSeatsByShowtime(uuid)
+            .then((payload) => {
 
-            setSeatData({
-                movie: payload.movie,
-                showtime: payload.showtime,
-                hall: payload.hall,
-                seats: sortedSeats,
-                pricing: payload.pricing
-            });
-            console.log("✅ [API] Đã lấy dữ liệu ghế thành công");
-        }).catch(err => console.error("❌ [API] Lỗi fetch:", err));
+                const sortedSeats = [...payload.seats].sort((a, b) =>
+                    a.seatNumber.localeCompare(b.seatNumber, undefined, { numeric: true })
+                );
 
-        // 2. Cấu hình Socket
-        const socket = io("http://localhost:3000");
+                setSeatData({
+                    movie: payload.movie,
+                    showtime: payload.showtime,
+                    hall: payload.hall,
+                    seats: sortedSeats,
+                    pricing: payload.pricing || {}
+                });
 
-        socket.on("connect", () => {
-            console.log("🚀 [Socket] Đã kết nối thành công với Server! ID:", socket.id);
+            })
+            .catch(err => console.error("❌ [API] Lỗi fetch:", err));
 
-            // Join vào room
-            socket.emit("join-showtime", uuid);
-            console.log(`📡 [Socket] Đã gửi yêu cầu join phòng: ${uuid}`);
-        });
-
-        socket.on("connect_error", (err) => {
-            console.error("❌ [Socket] Lỗi kết nối:", err.message);
-        });
-
-        // Lắng nghe cập nhật
-        socket.on("seat-status-updated", (data) => {
-            console.log("🔔 [Socket] Nhận cập nhật ghế mới:", data);
-
-            setSeatData(prev => ({
-                ...prev,
-                seats: prev.seats.map(seat => {
-                    if (data.seatUUIDs.includes(seat.UUID)) {
-                        console.log(`🎨 Cập nhật ghế ${seat.seatNumber} sang trạng thái: ${data.status}`);
-                        return {
-                            ...seat,
-                            status: data.status,
-                            expiresAt: data.expiresAt || seat.expiresAt
-                        };
-                    }
-                    return seat;
-                })
-            }));
-        });
-
-        // 3. Dọn dẹp
-        return () => {
-            console.log("🔌 [Socket] Đang ngắt kết nối...");
-            socket.off("seat-status-updated");
-            socket.disconnect();
-        };
     }, [uuid]);
 
     const resetSelection = () => {
@@ -89,6 +50,46 @@ export default function SeatSelection() {
         );
     };
 
+    const handleContinue = async () => {
+        if (selectedSeats.length === 0) {
+            alert("Trung ơi, chọn ít nhất 1 ghế mới đi tiếp được nhé!");
+            return;
+        }
+
+        try {
+            console.log("⏳ Đang gửi yêu cầu giữ ghế...");
+
+            // 1. Gọi API holdSeats từ service
+            // uuid ở đây là từ useParams() của trang SeatSelection
+            const response = await seatService.holdSeats(uuid, selectedSeats);
+
+            // Log để Trung kiểm tra như đã hứa nhé
+            console.log("✅ [BACKEND LOG] Ghế đã được giữ thành công:", response.data);
+            console.log("⏰ Thời gian hết hạn:", new Date(response.data.expiresAt).toLocaleTimeString());
+
+            // 2. Tìm chi tiết các ghế đã chọn để truyền dữ liệu đi
+            const selectedSeatsDetails = seatData.seats.filter(s => selectedSeats.includes(s.UUID));
+
+            // 3. Gọi callback của Cha để chuyển sang bước Bắp nước (Step 2)
+            onNext(selectedSeats, {
+                details: selectedSeatsDetails,
+                totalPrice: calculateTotal(),
+                pricing: seatData.pricing,
+                movie: seatData.movie,
+                showtime: seatData.showtime,
+                holdExpiresAt: response.data.expiresAt
+            });
+
+        } catch (error) {
+            console.error("❌ [API ERROR] Lỗi giữ ghế:", error.message);
+
+            // Thông báo cho user biết ghế đã có người chọn hoặc lỗi hệ thống
+            alert("Rất tiếc, một số ghế bạn chọn vừa có người khác giữ mất hoặc đã hết hạn. Trung vui lòng chọn lại ghế khác nhé!");
+
+            // Có thể reload lại danh sách ghế tại đây nếu cần
+            // window.location.reload(); 
+        }
+    };
     const calculateTotal = () => {
         return selectedSeats.reduce((total, seatUUID) => {
             const seat = seatData.seats.find(s => s.UUID === seatUUID);
@@ -154,12 +155,13 @@ export default function SeatSelection() {
                                         const isSold = seat.status === "sold";
                                         const isHeld = seat.status === "held" || seat.status === "pending"; // Thêm dòng này để check các trạng thái đang bị giữ
                                         const isCouple = seat.type === "COUPLE";
+                                        const isLockedByOthers = ["held", "pending", "booked", "sold"].includes(seat.status);
 
                                         return (
                                             <button
                                                 key={seat.UUID}
                                                 onClick={() => toggleSeat(seat)}
-                                                disabled={isSold || isHeld}
+                                                disabled={isLockedByOthers}
                                                 className={`
                                             relative transition-all duration-300 flex items-center justify-center rounded-xl
 
@@ -171,6 +173,9 @@ export default function SeatSelection() {
                                                         ? 'bg-[#E50914] scale-110 z-10 shadow-[0_0_25px_rgba(229,9,20,0.5)]'
                                                         : 'bg-[#181818]'
                                                     }
+                                            ${isLockedByOthers
+                                                        ? 'bg-neutral-900 opacity-30 cursor-not-allowed grayscale'
+                                                        : 'cursor-pointer shadow-xl'}        
 
                                             ${!isSelected && !isSold && seat.type === 'VIP' ? 'border-b-4 border-yellow-500' : ''}
 
@@ -270,7 +275,7 @@ export default function SeatSelection() {
                                 </button>
 
                                 {/* NÚT TIẾP TỤC */}
-                                <button className="bg-[#E50914] hover:bg-red-700 active:scale-95 text-white px-8 md:px-14 py-4 md:py-5 rounded-2xl font-black text-sm md:text-lg transition-all shadow-xl shadow-red-600/10 uppercase tracking-tighter flex-1 lg:flex-none">
+                                <button onClick={handleContinue} className="bg-[#E50914] hover:bg-red-700 active:scale-95 text-white px-8 md:px-14 py-4 md:py-5 rounded-2xl font-black text-sm md:text-lg transition-all shadow-xl shadow-red-600/10 uppercase tracking-tighter flex-1 lg:flex-none">
                                     Tiếp tục
                                 </button>
                             </div>

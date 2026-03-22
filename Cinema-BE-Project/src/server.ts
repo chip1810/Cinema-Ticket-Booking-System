@@ -1,7 +1,7 @@
 import http from "http";
 import { app } from "./app"; // file express của bạn
 import { initSocket } from "./socket";
-import { AppDataSource } from "./data-source";
+import { AppDataSource } from "./mongo";
 
 const PORT = process.env.PORT || 3000;
 

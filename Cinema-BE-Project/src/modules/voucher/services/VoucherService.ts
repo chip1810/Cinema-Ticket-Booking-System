@@ -1,4 +1,4 @@
-import { AppDataSource } from "../../../data-source";
+import { AppDataSource } from "../../../mongo";
 import { Voucher } from "../models/Voucher";
 import { VoucherUsage } from "../models/VoucherUsage";
 import { CreateVoucherDTO } from "../dtos/CreateVoucherDto";

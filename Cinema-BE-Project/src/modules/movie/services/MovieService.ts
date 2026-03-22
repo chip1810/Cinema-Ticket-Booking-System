@@ -1,4 +1,4 @@
-import { AppDataSource } from "../../../data-source";
+import { AppDataSource } from "../../../mongo";
 import { Movie } from "../models/Movie";
 import { Genre } from "../../genre/models/Genre";
 import { Seat } from "../../seat/models/Seat";

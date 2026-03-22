@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AppDataSource } from "../data-source";
+import { AppDataSource } from "../mongo";
 import { News, NewsStatus } from "../modules/news/models/News";
 import { ApiResponse } from "../utils/ApiResponse";
 

@@ -1,27 +1,10 @@
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    ManyToMany,
-    Generated
-} from "typeorm";
-import { Movie } from "../../movie/models/Movie";
+import { Schema, model, Types } from "mongoose";
 
-@Entity("genres")
-export class Genre {
-  @PrimaryGeneratedColumn()
-  id!: number;
+const GenreSchema = new Schema({
+  UUID: { type: String, unique: true, default: () => new Types.ObjectId().toString() },
+  name: { type: String, required: true, unique: true },
+  description: { type: String },
+  movies: [{ type: Types.ObjectId, ref: "Movie" }] // ManyToMany reference
+}, { timestamps: true });
 
-    @Column({ type: "uuid", unique: true })
-    @Generated("uuid")
-    UUID!: string;
-
-    @Column({ unique: true })
-    name!: string;
-
-  @Column({ type: "text", nullable: true })
-  description?: string;
-
-    @ManyToMany(() => Movie, (movie) => movie.genres)
-    movies!: Movie[];
-}
+export const Genre = model("Genre", GenreSchema);

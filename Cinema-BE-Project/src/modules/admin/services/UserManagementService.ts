@@ -1,4 +1,4 @@
-import { AppDataSource } from "../../../data-source";
+import { AppDataSource } from "../../../mongo";
 import { User, UserRole } from "../../auth/models/User";
 
 export class UserManagementService {

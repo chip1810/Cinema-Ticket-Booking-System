@@ -1,4 +1,4 @@
-import { AppDataSource } from "../../../data-source";
+import { AppDataSource } from "../../../mongo";
 import { Order } from "../models/Order";
 
 export class OrderService {

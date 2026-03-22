@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AppDataSource } from "../data-source";
+import { AppDataSource } from "../mongo";
 import { PricingRule } from "../modules/pricing_rule/models/PricingRule";
 import { Showtime } from "../modules/showtime/models/Showtime";
 import { SeatType } from "../modules/seat/models/enums/SeatType";
