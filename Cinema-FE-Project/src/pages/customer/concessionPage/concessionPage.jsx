@@ -5,6 +5,7 @@ import { SnackCard } from "../../../components/concession/SnackCard";
 import { OrderSummary } from "../../../components/concession/OrderSummary";
 import { concessionService } from "../../../services/concessionService";
 import { voucherService } from "../../../services/voucherService";
+import Swal from 'sweetalert2';
 
 const ConcessionPage = ({ bookingData, onNext, onBack }) => {
   const [snacks, setSnacks] = useState([]);
@@ -12,6 +13,15 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeLeft, setTimeLeft] = useState("");
+  const [selectedSeats, setSelectedSeats] = useState(
+    bookingData?.details?.map(s => s.UUID) || []
+  );
+
+  useEffect(() => {
+    if (bookingData?.details) {
+      setSelectedSeats(bookingData.details.map(s => s.UUID));
+    }
+  }, [bookingData]);
 
   // Voucher states
   const [voucherCode, setVoucherCode] = useState("");
@@ -42,8 +52,23 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
       if (distance < 0) {
         clearInterval(timer);
         setTimeLeft("00:00");
-        alert("Hết thời gian giữ ghế! Vui lòng chọn lại.");
-        onBack();
+
+        // THAY THẾ ALERT BẰNG SWEETALERT2
+        Swal.fire({
+          title: 'HẾT THỜI GIAN GIỮ GHẾ!',
+          text: 'Phiên giao dịch của bạn đã hết hạn. Vui lòng chọn lại ghế.',
+          icon: 'warning',
+          background: '#111', // Nền tối hợp với app
+          color: '#fff',      // Chữ trắng
+          confirmButtonColor: '#E50914', // Màu đỏ Netflix/Cinema
+          confirmButtonText: 'QUAY LẠI',
+          allowOutsideClick: false, // Ép người dùng phải bấm nút
+        }).then((result) => {
+          if (result.isConfirmed) {
+            onBack();
+          }
+        });
+
       } else {
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
@@ -170,6 +195,7 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
 
     onNext({
       ...bookingData,
+      selectedSeats,
       snacks: snacksPayload,
       snacksTotal,
       subtotal: subTotal,
@@ -193,8 +219,12 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#050505] text-white font-sans">
-      {/* Thanh thời gian giữ ghế */}
-      <div className="bg-red-600/10 border-b border-red-600/20 py-2 text-center backdrop-blur-md">
+
+      {/* Đồng hồ đếm ngược */}
+      <div
+        style={{ paddingTop: '80px' }}
+        className="bg-red-600/10 border-b border-red-600/20 py-2 text-center backdrop-blur-md"
+      >
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">
           Ghế của bạn được giữ trong:
           <span className="text-white font-mono text-sm ml-2">{timeLeft}</span>
@@ -288,6 +318,7 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
             total={totalPayable}
             onProceed={handlePayment}
             bookingDetails={bookingData?.details || []}
+            pricing={bookingData?.pricing || {}}
             movieTitle={bookingData?.movie?.title || "Unknown Movie"}
             posterUrl={bookingData?.movie?.posterUrl}
             showtime={bookingData?.showtime?.startTime}

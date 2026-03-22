@@ -14,14 +14,21 @@ import {
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
+import { useAuth } from "../../../context/AuthContext";
 import { orderService } from "../../../services/orderService";
+import { staffService } from "../../../services/staffService";
 
 export default function BookingDetailPage() {
   const { orderUUID } = useParams();
+  const { user } = useAuth();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+
+  const isStaff = String(user?.role || "").toLowerCase() === "staff";
+  const backPath = isStaff ? "/staff" : "/booking-history";
+  const backLabel = isStaff ? "Ve Staff Portal" : "Ve lich su dat ve";
 
   const statusMeta = useMemo(
     () => ({
@@ -61,12 +68,18 @@ export default function BookingDetailPage() {
       return;
     }
 
-    orderService
-      .getBookingDetail(orderUUID)
+    setLoading(true);
+    setErr("");
+
+    const request = isStaff
+      ? staffService.getOrderDetailByUUID(orderUUID)
+      : orderService.getBookingDetail(orderUUID);
+
+    Promise.resolve(request)
       .then((data) => setOrder(data))
       .catch((e) => setErr(e?.message || "Khong tai duoc chi tiet don"))
       .finally(() => setLoading(false));
-  }, [orderUUID]);
+  }, [orderUUID, isStaff]);
 
   if (loading) {
     return (
@@ -89,11 +102,11 @@ export default function BookingDetailPage() {
           <p className="text-sm text-slate-300 mt-2">{err || "Don hang khong ton tai"}</p>
           <div className="mt-4 flex gap-3">
             <Link
-              to="/booking-history"
+              to={backPath}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#E50914] hover:bg-red-600 transition font-semibold"
             >
               <ArrowLeft className="w-4 h-4" />
-              Ve lich su
+              {backLabel}
             </Link>
           </div>
         </div>
@@ -248,11 +261,11 @@ export default function BookingDetailPage() {
 
             <div className="flex gap-3 flex-wrap">
               <Link
-                to="/booking-history"
+                to={backPath}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/15 hover:bg-white/5 transition font-semibold"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Ve lich su dat ve
+                {backLabel}
               </Link>
             </div>
           </div>

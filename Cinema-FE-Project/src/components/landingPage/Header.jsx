@@ -2,10 +2,12 @@ import { Search, LogIn, LogOut, User } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import AuthModal from "../common/Modal/AuthModal";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const loginBtnRef = useRef(null);
   const menuRef = useRef(null);
@@ -32,11 +34,29 @@ export default function Header() {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // handle Profile click
+  const handleProfileClick = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        if (decoded.role === "staff") {
+          navigate("/staff"); // staff redirect to dashboard
+        } else {
+          navigate("/profile"); // others go to their profile page
+        }
+      } catch (err) {
+        console.error("Invalid token", err);
+        navigate("/login");
+      }
+    } else {
+      navigate("/login");
+    }
+    setShowMenu(false);
+  };
 
   return (
     <header className="fixed top-0 z-50 w-full glass-effect border-b border-white/10 px-6 lg:px-20 py-4 flex items-center justify-between">
@@ -47,9 +67,7 @@ export default function Header() {
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
             <span className="font-bold text-2xl">S</span>
           </div>
-          <h2 className="text-slate-100 text-xl font-bold tracking-tight">
-            STARLIGHT
-          </h2>
+          <h2 className="text-slate-100 text-xl font-bold tracking-tight">FCINEMA</h2>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -78,12 +96,10 @@ export default function Header() {
             ref={loginBtnRef}
             onClick={() => {
               const rect = loginBtnRef.current.getBoundingClientRect();
-
               setModalPos({
                 x: rect.left + rect.width / 2,
                 y: rect.top + rect.height / 2
               });
-
               setShowAuth(true);
             }}
             className="flex items-center gap-2 text-slate-300 hover:text-white text-sm font-medium"
@@ -105,7 +121,10 @@ export default function Header() {
             {showMenu && (
               <div className="absolute right-0 mt-3 w-44 bg-slate-800 border border-white/10 rounded-xl shadow-xl overflow-hidden animate-fadeIn">
 
-                <button className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700">
+                <button
+                  onClick={handleProfileClick}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
+                >
                   Profile
                 </button>
 

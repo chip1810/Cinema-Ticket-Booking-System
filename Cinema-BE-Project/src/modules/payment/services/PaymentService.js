@@ -67,7 +67,7 @@ class PaymentService {
             throw new Error("Invalid amount from checkoutToken");
         }
 
-        // Nếu user bấm lại thanh toán, tái dùng payment link đang PENDING
+        // 1️⃣ Kiểm tra nếu user bấm lại thanh toán, tái dùng payment link đang PENDING
         const existingPending = await PaymentTransaction.findOne({
             checkoutToken,
             user: userId,
@@ -83,11 +83,27 @@ class PaymentService {
                 amount: existingPending.amount,
                 expiredAt: existingPending.expiresAt,
                 reused: true,
+                orderUUID: existingPending.orderUUID,
             };
         }
 
+        // 2️⃣ Tạo orderCode duy nhất
         const orderCode = await this._generateUniqueOrderCode();
 
+        // 3️⃣ Tạo Order trước khi tạo payment link
+        const orderPayload = {
+            user: userId,
+            showtimeUUID: payload.showtimeUUID,
+            seats: payload.seatUUIDs || [],
+            snacks: payload.snacks || [],
+            totalAmount: amount,
+            status: OrderStatus.PENDING, // trạng thái mới
+            createdAt: new Date(),
+        };
+
+        const orderDoc = await Order.create(orderPayload);
+
+        // 4️⃣ Tạo URL trả về / hủy
         const returnUrl = new URL(process.env.PAYOS_RETURN_URL);
         const cancelUrl = new URL(process.env.PAYOS_CANCEL_URL);
         returnUrl.searchParams.set("orderCode", String(orderCode));
@@ -95,6 +111,7 @@ class PaymentService {
 
         const expiresAt = new Date(payload.expiresAt || Date.now() + 5 * 60 * 1000);
 
+        // 5️⃣ Chuẩn bị payload cho PayOS
         const paymentData = {
             orderCode,
             amount,
@@ -110,8 +127,10 @@ class PaymentService {
             cancelUrl: cancelUrl.toString(),
         };
 
+        // 6️⃣ Gọi PayOS tạo payment link
         const payosResp = await this.payOS.paymentRequests.create(paymentData);
 
+        // 7️⃣ Tạo PaymentTransaction và liên kết với Order
         await PaymentTransaction.create({
             user: userId,
             checkoutToken,
@@ -121,9 +140,11 @@ class PaymentService {
             amount,
             status: PaymentStatus.PENDING,
             expiresAt,
+            orderUUID: orderDoc.UUID, // link tới Order
         });
 
-        console.log("[PAYMENT] create-link orderCode:", orderCode, "user:", userId);
+        console.log("[PAYMENT] create-link orderCode:", orderCode, "user:", userId, "orderUUID:", orderDoc.UUID);
+
         return {
             orderCode,
             amount,
@@ -131,17 +152,17 @@ class PaymentService {
             paymentLinkId: payosResp.paymentLinkId,
             expiredAt: expiresAt,
             reused: false,
+            orderUUID: orderDoc.UUID,
         };
     }
 
     async handlePayOSWebhook(webhookBody) {
-        // 1) Verify signature từ payOS (nếu sai signature -> throw)
+        // 1️⃣ Verify signature từ PayOS
         const verified =
             process.env.PAYOS_ALLOW_MOCK_WEBHOOK === "true" && webhookBody?.__mock === true
                 ? webhookBody
                 : this.payOS.webhooks.verify(webhookBody);
 
-        // SDK có thể trả dạng { success, data, ... } hoặc trả thẳng data
         const envelope = verified?.data ? verified : { success: true, data: verified };
         const data = envelope?.data || {};
 
@@ -150,10 +171,10 @@ class PaymentService {
             throw new Error("Invalid webhook orderCode");
         }
 
-        // 2) Tìm transaction đã tạo khi create-link
+        // 2️⃣ Tìm PaymentTransaction tương ứng
         const tx = await PaymentTransaction.findOne({ orderCode });
         if (!tx) {
-            // Không có tx tương ứng: vẫn trả success để tránh payOS retry liên tục
+            console.log("[WEBHOOK] Transaction not found for orderCode:", orderCode);
             return {
                 ignored: true,
                 reason: "Transaction not found",
@@ -161,7 +182,7 @@ class PaymentService {
             };
         }
 
-        // 3) Idempotent: webhook gọi lại nhiều lần
+        // 3️⃣ Idempotent: tránh xử lý lại
         if (tx.status === PaymentStatus.PAID) {
             return {
                 ignored: true,
@@ -171,7 +192,6 @@ class PaymentService {
             };
         }
 
-        // Nếu tx đã ở trạng thái kết thúc khác PENDING, bỏ qua
         if ([PaymentStatus.CANCELLED, PaymentStatus.FAILED].includes(tx.status)) {
             return {
                 ignored: true,
@@ -181,7 +201,7 @@ class PaymentService {
             };
         }
 
-        // 4) Validate amount chống giả mạo/chênh lệch
+        // 4️⃣ Validate amount chống giả mạo/chênh lệch
         if (Number(data.amount) !== Number(tx.amount)) {
             tx.status = PaymentStatus.FAILED;
             tx.failReason = "Amount mismatch";
@@ -196,17 +216,25 @@ class PaymentService {
             };
         }
 
-        // 5) Xác định thanh toán thành công hay không
+        // 5️⃣ Kiểm tra thanh toán thành công
         const paid = envelope.success === true && String(data.code) === "00";
 
-        // 5a) Không thành công / cancel
         if (!paid) {
+            // Không thành công / cancel
             tx.status = PaymentStatus.CANCELLED;
             tx.failReason = data.desc || envelope.desc || "Payment cancelled/failed";
             tx.rawWebhook = webhookBody;
             await tx.save();
 
             await seatService.releaseHeldSeatsByCheckoutToken(tx.checkoutToken, String(tx.user));
+
+            // Update Order tương ứng
+            if (tx.orderUUID) {
+                await Order.updateOne(
+                    { UUID: tx.orderUUID },
+                    { $set: { status: OrderStatus.CANCELLED } }
+                );
+            }
 
             return {
                 updated: true,
@@ -216,15 +244,17 @@ class PaymentService {
             };
         }
 
-        // 5b) Thành công -> confirm booking
+        // 6️⃣ Thanh toán thành công -> confirm booking
         try {
             const bookingResult = await seatService.confirmBooking(tx.checkoutToken, String(tx.user));
 
-            // Update order status thành PAID
-            await Order.updateOne(
-                { UUID: bookingResult.orderUUID },
-                { $set: { status: OrderStatus.PAID } }
-            );
+            // Update Order thành PAID
+            if (tx.orderUUID) {
+                await Order.updateOne(
+                    { UUID: bookingResult.orderUUID },
+                    { $set: { status: OrderStatus.PAID } }
+                );
+            }
 
             tx.status = PaymentStatus.PAID;
             tx.orderUUID = bookingResult.orderUUID;
@@ -233,6 +263,8 @@ class PaymentService {
             tx.failReason = null;
             await tx.save();
 
+            console.log("[WEBHOOK] Payment success for orderCode:", orderCode, "orderUUID:", tx.orderUUID);
+
             return {
                 updated: true,
                 orderCode,
@@ -240,11 +272,21 @@ class PaymentService {
                 orderUUID: tx.orderUUID,
             };
         } catch (e) {
-            // Thanh toán thành công nhưng không confirm được vé (hết hold, ghế conflict, ...)
+            // Thanh toán thành công nhưng confirm booking thất bại
             tx.status = PaymentStatus.FAILED;
             tx.failReason = `CONFIRM_FAILED: ${e.message || "Unknown error"}`;
             tx.rawWebhook = webhookBody;
             await tx.save();
+
+            // Update Order thành FAILED nếu có
+            if (tx.orderUUID) {
+                await Order.updateOne(
+                    { UUID: tx.orderUUID },
+                    { $set: { status: OrderStatus.FAILED } }
+                );
+            }
+
+            console.log("[WEBHOOK] Payment confirmed but booking failed for orderCode:", orderCode);
 
             return {
                 updated: true,
@@ -274,22 +316,53 @@ class PaymentService {
     async expirePendingTransactions() {
         const now = new Date();
 
-        const result = await PaymentTransaction.updateMany(
-            {
-                status: PaymentStatus.PENDING,
-                expiresAt: { $lte: now },
-            },
-            {
-                $set: {
-                    status: PaymentStatus.CANCELLED,
-                    failReason: "EXPIRED",
-                },
+        const expiredTxs = await PaymentTransaction.find({
+            status: PaymentStatus.PENDING,
+            expiresAt: { $lte: now },
+        }).select("_id user checkoutToken orderUUID orderCode");
+
+        let cancelledCount = 0;
+
+        for (const tx of expiredTxs) {
+            // 1) nhả ghế hold
+            try {
+                await seatService.releaseHeldSeatsByCheckoutToken(
+                    tx.checkoutToken,
+                    String(tx.user)
+                );
+            } catch (e) {
+                console.warn(
+                    `[payment-cleanup] release seats failed for orderCode=${tx.orderCode}:`,
+                    e.message
+                );
             }
-        );
 
-        return result.modifiedCount || 0;
+            // 2) cancel payment tx (idempotent)
+            const updated = await PaymentTransaction.updateOne(
+                { _id: tx._id, status: PaymentStatus.PENDING },
+                {
+                    $set: {
+                        status: PaymentStatus.CANCELLED,
+                        failReason: "EXPIRED",
+                    },
+                }
+            );
+
+            if (updated.modifiedCount > 0) {
+                cancelledCount++;
+
+                // 3) cancel order liên quan (nếu có)
+                if (tx.orderUUID) {
+                    await Order.updateOne(
+                        { UUID: tx.orderUUID, status: { $ne: OrderStatus.PAID } },
+                        { $set: { status: OrderStatus.CANCELLED } }
+                    );
+                }
+            }
+        }
+
+        return cancelledCount;
     }
-
 
     async cancelByUser(orderCode, userId, reason = "USER_CANCELLED") {
         const tx = await PaymentTransaction.findOne({

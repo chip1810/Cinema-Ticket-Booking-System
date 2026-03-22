@@ -7,6 +7,7 @@ export const OrderSummary = ({
   showtime,
   items = [],
   ticketTotal = 0,
+  pricing = {},
   total = 0,
   onProceed,
 
@@ -28,15 +29,11 @@ export const OrderSummary = ({
     : "-";
 
   return (
-    <aside className="w-96 bg-[#0a0a0a]/80 border-l border-white/10 flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-white/10 flex gap-4 items-center">
+    <aside className="w-full h-full bg-[#0a0a0a]/90 flex flex-col border-l border-white/10">
+      {/* Header Phim */}
+      <div className="p-6 border-b border-white/10 flex gap-4">
         {posterUrl && (
-          <img
-            src={posterUrl}
-            alt={movieTitle}
-            className="w-20 h-28 object-cover rounded-lg shadow-md"
-          />
+          <img src={posterUrl} alt={movieTitle} className="w-20 h-28 object-cover rounded-lg shadow-2xl border border-white/10" />
         )}
         <div className="flex-1">
           <h3 className="text-xl font-bold text-white mb-1">{movieTitle || "Unknown Movie"}</h3>
@@ -137,7 +134,7 @@ export const OrderSummary = ({
 
         <button
           onClick={onProceed}
-          className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold uppercase tracking-wider shadow-md transition-transform active:scale-95"
+          className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-red-600/20 transition-transform active:scale-95"
         >
           Thanh toán
         </button>
