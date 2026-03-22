@@ -6,6 +6,7 @@ import MovieInfo from "../components/movieDetail/MovieInfo";
 import ShowtimeSection from "../components/movieDetail/ShowtimeSection";
 import { movieService } from "../services/movieService";
 import Loader from "../components/common/Loading/Loader";
+import ReviewSection from "../components/movieDetail/ReviewSection";
 
 export default function MovieDetail() {
     const { uuid } = useParams();
@@ -34,6 +35,9 @@ export default function MovieDetail() {
             <MovieHero movie={movie} />
             <MovieInfo movie={movie} />
             <ShowtimeSection showtimes={movie.showtimes} />
+            <ReviewSection movieUUID={movie.UUID} />
         </div>
     );
+
+    
 }

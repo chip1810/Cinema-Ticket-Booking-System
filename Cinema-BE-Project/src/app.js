@@ -21,6 +21,7 @@ const voucherRoutes = require("./modules/voucher/routes/voucherRoutes");
 const concessionRoutes = require("./modules/concession/routes/concessionRoutes");
 const orderRoutes = require("./modules/order/routes/orderRoutes");
 const paymentRoutes = require("./modules/payment/routes/paymentRoutes");
+const reviewRoutes = require("./modules/review/routes/reviewRoutes");
 
 // Seed entities
 const Hall = require("./modules/hall/models/Hall");
@@ -39,6 +40,7 @@ app.use("/api/staff", staffRouter);
 app.use("/api/seat", seatRouter);
 app.use("/api/vouchers", voucherRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Controllers instance
 const auth = new AuthController();

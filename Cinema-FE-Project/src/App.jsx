@@ -31,6 +31,9 @@ import RevenueReportsPage from './pages/admin/RevenueReportsPage/RevenueReportsP
 import CustomerInsightsPage from './pages/admin/CustomerInsightsPage/CustomerInsightsPage';
 import SettingsPage from './pages/admin/SettingsPage/SettingsPage';
 import PaymentResultPage from './pages/PaymentResultPage';
+import BookingHistoryPage from './pages/customer/BookingHistoryPage/BookingHistoryPage';
+import BookingDetailPage from "./pages/customer/BookingDetailPage/BookingDetailPage";
+
 
 export default function App() {
   return (
@@ -78,6 +81,8 @@ export default function App() {
 
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/booking-history" element={<BookingHistoryPage />} />
+            <Route path="/booking-history/:orderUUID" element={<BookingDetailPage />} />
           </Routes>
         </main>
 

@@ -68,7 +68,7 @@ export default function BookingFlow() {
                 seatUUIDs,
                 concessions,
                 voucherUUID: null,
-                voucherCode: null,
+                voucherCode: finalOrder?.voucherCode || null,
             });
 
             // 2) tạo link PayOS
