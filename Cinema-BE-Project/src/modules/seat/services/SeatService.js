@@ -32,7 +32,7 @@ class SeatService {
       if (seats.length !== seatUUIDs.length) throw new Error("Some seats not found");
 
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + 5 * 60 * 1000);
+      const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
 
       for (const seat of seats) {
         if (!seat.hall.equals(showtime.hall)) {
@@ -86,7 +86,7 @@ class SeatService {
       return {
         seats: seatUUIDs,
         expiresAt,
-        expiresIn: 300
+        expiresIn: 600
       };
 
     } catch (err) {
@@ -305,7 +305,7 @@ class SeatService {
       finalAmount = voucherResult.finalAmount;
     }
 
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     const payload = {
       userId,
       showtimeUUID,
@@ -319,7 +319,7 @@ class SeatService {
       expiresAt: expiresAt.toISOString(),
     };
 
-    const checkoutToken = jwt.sign(payload, process.env.CHECKOUT_TOKEN_SECRET, { expiresIn: "5m" });
+    const checkoutToken = jwt.sign(payload, process.env.CHECKOUT_TOKEN_SECRET, { expiresIn: "10m" });
 
     return {
       seatsTotal,
@@ -332,7 +332,6 @@ class SeatService {
     };
   }
 
-  /** GET SEATS BY SHOWTIME */
   /** GET SEATS BY SHOWTIME (có pricing) */
   async getSeatsByShowtime(showtimeUUID) {
     const showtime = await Showtime.findOne({ UUID: showtimeUUID })
@@ -392,6 +391,52 @@ class SeatService {
       seats: seatStatus,
       pricing // 🔥 giá mỗi loại ghế
     };
+  }
+
+
+  async releaseHeldSeatsByCheckoutToken(checkoutToken, userId) {
+    let payload;
+    try {
+      payload = jwt.verify(checkoutToken, process.env.CHECKOUT_TOKEN_SECRET);
+    } catch {
+      throw new Error("Checkout token is invalid or expired");
+    }
+
+    if (String(payload.userId) !== String(userId)) {
+      throw new Error("Token does not belong to this user");
+    }
+
+    const { showtimeUUID, seatUUIDs } = payload;
+    if (!showtimeUUID || !Array.isArray(seatUUIDs) || seatUUIDs.length === 0) {
+      return { released: [], showtimeUUID: null };
+    }
+
+    const showtime = await Showtime.findOne({ UUID: showtimeUUID });
+    if (!showtime) return { released: [], showtimeUUID };
+
+    const seats = await Seat.find({ UUID: { $in: seatUUIDs } });
+
+    const releasedUUIDs = [];
+    for (const seat of seats) {
+      const deleted = await SeatHold.deleteOne({
+        showtime: showtime._id,
+        seat: seat._id,
+        user: userId,
+      });
+
+      if (deleted.deletedCount > 0) {
+        releasedUUIDs.push(seat.UUID);
+      }
+    }
+
+    if (releasedUUIDs.length > 0) {
+      getIO().to(showtimeUUID).emit("seat-status-updated", {
+        seatUUIDs: releasedUUIDs,
+        status: "available",
+      });
+    }
+
+    return { released: releasedUUIDs, showtimeUUID };
   }
 }
 

@@ -24,9 +24,11 @@ export default function CustomerTab() {
         if (!phone) return;
         setLoading(true);
         try {
-            const response = await staffService.lookupCustomer(phone);
-            // Dựa vào JSON bạn gửi, dữ liệu nằm trong response.data
-            setCustomer(response.data);
+            const customerData = await staffService.lookupCustomer(phone);
+            console.log("FULL CUSTOMER:", customerData);
+            console.log("ORDERS:", customerData.orders);
+
+            setCustomer(customerData); // dùng thẳng object trả về
         } catch (err) {
             console.error(err);
             setCustomer(null);
@@ -34,7 +36,6 @@ export default function CustomerTab() {
         }
         setLoading(false);
     };
-
     return (
         <div className="space-y-10 animate-fadeIn pb-10">
             {/* Search Header */}

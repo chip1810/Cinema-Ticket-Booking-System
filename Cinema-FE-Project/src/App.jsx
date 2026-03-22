@@ -30,6 +30,8 @@ import VouchersPage from './pages/admin/VouchersPage/VouchersPage';
 import RevenueReportsPage from './pages/admin/RevenueReportsPage/RevenueReportsPage';
 import CustomerInsightsPage from './pages/admin/CustomerInsightsPage/CustomerInsightsPage';
 import SettingsPage from './pages/admin/SettingsPage/SettingsPage';
+import PaymentResultPage from './pages/PaymentResultPage';
+
 import StaffDashboard from './pages/staff/StaffDashboard';
 
 // Layout cho các trang khách hàng (Home, Movie Detail...)
@@ -61,6 +63,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/movies/:uuid" element={<MovieDetail />} />
             <Route path="/booking/:uuid" element={<BookingFlow />} />
+            <Route path="/payment/result" element={<PaymentResultPage />} />
           </Route>
 
           {/* Trang Staff: Đứng độc lập, không dính Header/Footer khách hàng */}

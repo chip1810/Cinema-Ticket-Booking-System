@@ -3,9 +3,6 @@ const cors = require("cors");
 const helmet = require("helmet");
 require("dotenv").config();
 
-const { connectMongo } = require("./mongo");
-
-
 // Controllers
 const AuthController = require("./modules/auth/controllers/AuthController");
 const MovieController = require("./modules/movie/controllers/MovieController");
@@ -23,6 +20,7 @@ const showtimeRoutes = require("./modules/showtime/routes/showtimeRoutes");
 const voucherRoutes = require("./modules/voucher/routes/voucherRoutes");
 const concessionRoutes = require("./modules/concession/routes/concessionRoutes");
 const orderRoutes = require("./modules/order/routes/orderRoutes");
+const paymentRoutes = require("./modules/payment/routes/paymentRoutes");
 
 // Seed entities
 const Hall = require("./modules/hall/models/Hall");
@@ -40,6 +38,7 @@ app.use("/api/concessions", concessionRoutes);
 app.use("/api/staff", staffRouter);
 app.use("/api/seat", seatRouter);
 app.use("/api/vouchers", voucherRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // Controllers instance
 const auth = new AuthController();

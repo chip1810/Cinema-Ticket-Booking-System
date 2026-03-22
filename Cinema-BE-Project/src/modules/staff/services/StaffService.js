@@ -52,18 +52,40 @@ class StaffService {
   }
 
   async lookupOrderById(orderId) {
-    // 1️⃣ Tìm Order
+    // 1️⃣ Tìm Order và thông tin User + Voucher (nếu có)
     const order = await Order.findById(orderId)
       .populate('user', 'name email phone')
+      .populate('voucher', 'code discountAmount')
       .lean();
 
     if (!order) return { order: null };
 
-    // 2️⃣ Tìm OrderItem của order này
-    const orderItems = await OrderItem.find({ order: order._id }).lean();
+    // 2️⃣ Tìm OrderItem (Bắp nước) - Giả sử model này ref tới 'Concession'
+    // Nếu model OrderItem của bạn dùng ref khác, hãy đổi tên 'concession' cho đúng
+    const orderItems = await OrderItem.find({ order: order._id })
+      .populate('concession', 'name price type')
+      .lean();
 
-    // 3️⃣ Tìm Ticket của order này
-    const tickets = await Ticket.find({ order: order._id }).lean();
+    // 3️⃣ Tìm Ticket và lấy toàn bộ "phả hệ" dữ liệu
+    const tickets = await Ticket.find({ order: order._id })
+      .populate({
+        path: 'seat',
+        select: 'seatNumber type' // Lấy số ghế (A1) và loại ghế (VIP/NORMAL)
+      })
+      .populate({
+        path: 'showtime',
+        populate: [
+          {
+            path: 'movie',
+            select: 'title posterUrl duration' // Lấy thông tin phim
+          },
+          {
+            path: 'hall',
+            select: 'name' // Lấy tên phòng chiếu
+          }
+        ]
+      })
+      .lean();
 
     return { order, orderItems, tickets };
   }

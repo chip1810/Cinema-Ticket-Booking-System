@@ -3,8 +3,11 @@ import { useParams, useNavigate } from "react-router-dom"; // Thêm useNavigate
 import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
 import SeatSelection from "./SeatSelection";
-import ConcessionPage from "./customer/concessionPage/ConcessionPage";
+import ConcessionPage from "./customer/concessionPage/concessionPage";
 import Swal from "sweetalert2";
+import { SOCKET_URL } from "../config/api";
+import { seatService } from "../services/seatService";
+import { paymentService } from "../services/paymentService";
 
 export default function BookingFlow() {
     const { uuid } = useParams();
@@ -32,7 +35,7 @@ export default function BookingFlow() {
     // 1️⃣ Khởi tạo Socket
     useEffect(() => {
         if (!uuid) return;
-        const newSocket = io("http://localhost:3000");
+        const newSocket = io(SOCKET_URL);
 
         newSocket.on("connect", () => {
             console.log("🟢 Socket connected:", newSocket.id);
@@ -55,6 +58,60 @@ export default function BookingFlow() {
         setStep(1);
     };
 
+    const handleConcessionNext = async (finalOrder) => {
+        try {
+            const showtimeUUID = finalOrder?.showtime?.UUID;
+            const seatUUIDs = finalOrder?.selectedSeats || [];
+
+            const concessions = (finalOrder?.snacks || [])
+                .filter((s) => s.quantity > 0)
+                .map((s) => ({
+                    concessionUUID: s.UUID,
+                    quantity: s.quantity,
+                }));
+
+            if (!showtimeUUID || seatUUIDs.length === 0) {
+                throw new Error("Thiếu showtime hoặc ghế đã chọn");
+            }
+
+            // 1) lấy checkoutToken
+            const previewData = await seatService.checkoutPreview({
+                showtimeUUID,
+                seatUUIDs,
+                concessions,
+                voucherUUID: null,
+                voucherCode: null,
+            });
+
+            // 2) tạo link PayOS
+            const paymentData = await paymentService.createPayOSLink(previewData.checkoutToken);
+            console.log(paymentData);
+
+            // 3) redirect sang trang thanh toán
+            window.location.href = paymentData.checkoutUrl;
+        } catch (err) {
+            console.error("❌ Payment flow error:", err);
+            alert(err.message || "Không thể tạo thanh toán, vui lòng thử lại.");
+        }
+    };
+
+    // 4️⃣ Tạo object bookingData an toàn
+    const bookingDataSafe = seatData
+        ? {
+            details: seatData.seats?.filter((s) =>
+                selectedSeats.includes(s.UUID)
+            ) || [],
+            totalPrice: selectedSeats.reduce((total, seatUUID) => {
+                const seat = seatData?.seats?.find((s) => s.UUID === seatUUID);
+                if (!seat) return total;
+                return total + (seatData?.pricing?.[seat.type] || 0);
+            }, 0),
+            showtime: seatData.showtime || null,
+            movie: seatData.movie || null,
+            holdExpiresAt: seatData.holdExpiresAt || null,
+        }
+        : null;
+
     return (
         <div className="min-h-screen bg-[#050505]">
             {step === 1 && user && (
@@ -65,13 +122,20 @@ export default function BookingFlow() {
                 />
             )}
 
-            {step === 2 && user && (
-                <ConcessionPage
-                    bookingData={seatData}
-                    onBack={handleBackToSeats}
-                    onNext={(finalOrder) => console.log("Final order:", finalOrder)}
-                />
-            )}
-        </div>
+            {step === 2 && (
+                <>
+                    {console.log("📝 bookingData chuẩn bị gửi sang ConcessionPage:", {
+                        selectedSeats,
+                        seatData
+                    })}
+                    <ConcessionPage
+                        bookingData={seatData} // đã bao gồm details, totalPrice, holdExpiresAt...
+                        onBack={handleBackToSeats}
+                        onNext={handleConcessionNext}
+                    />
+                </>
+            )
+            }
+        </div >
     );
 }

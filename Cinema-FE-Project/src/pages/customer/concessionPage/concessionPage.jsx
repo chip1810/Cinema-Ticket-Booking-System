@@ -12,6 +12,15 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeLeft, setTimeLeft] = useState("");
+  const [selectedSeats, setSelectedSeats] = useState(
+    bookingData?.details?.map(s => s.UUID) || []
+  );
+
+  useEffect(() => {
+    if (bookingData?.details) {
+      setSelectedSeats(bookingData.details.map(s => s.UUID));
+    }
+  }, [bookingData]);
 
   // Log dữ liệu ghế và vé
   useEffect(() => {
@@ -126,11 +135,24 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
   const totalPayable = ticketTotal + snacksTotal;
 
   const handlePayment = () => {
+    if (!onNext) return;
+
+    const snacksPayload = addedSnacks
+      .filter((s) => s.quantity > 0)
+      .map((s) => ({
+        id: s.id,
+        UUID: s.UUID,      // để BookingFlow map sang concessionUUID
+        name: s.name,
+        quantity: s.quantity,
+        price: s.price,
+      }));
+
     onNext({
       ...bookingData,
-      snacks: addedSnacks,
+      selectedSeats,
+      snacks: snacksPayload,
       snacksTotal,
-      finalTotal: totalPayable
+      finalTotal: totalPayable,
     });
   };
 
@@ -152,8 +174,7 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
         className="bg-red-600/10 border-b border-red-600/20 py-2 text-center backdrop-blur-md"
       >
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">
-          Ghế của bạn được giữ trong:
-          <span className="text-white font-mono text-sm ml-2">{timeLeft}</span>
+          Ghế của bạn được giữ trong: <span className="text-white font-mono text-sm ml-2">{timeLeft}</span>
         </p>
       </div>
 
@@ -244,6 +265,7 @@ const ConcessionPage = ({ bookingData, onNext, onBack }) => {
             total={totalPayable}
             onProceed={handlePayment}
             bookingDetails={bookingData?.details || []}
+            pricing={bookingData?.pricing || {}}
             movieTitle={bookingData?.movie?.title || "Unknown Movie"}
             posterUrl={bookingData?.movie?.posterUrl}
             showtime={bookingData?.showtime?.startTime}

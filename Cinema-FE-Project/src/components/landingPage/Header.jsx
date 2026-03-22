@@ -15,6 +15,15 @@ export default function Header() {
   const [modalPos, setModalPos] = useState({ x: 0, y: 0 });
   const [showAuth, setShowAuth] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const isLoggedIn = Boolean(user);
+
+  const openAuthModal = () => {
+    const rect = loginBtnRef.current?.getBoundingClientRect();
+    if (rect) {
+      setModalPos({ x: rect.left, y: rect.bottom });
+    }
+    setShowAuth(true);
+  };
 
   // close dropdown when click outside
   useEffect(() => {
