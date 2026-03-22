@@ -2,10 +2,10 @@
   "name": "cinema-management-system",
   "version": "1.0.0",
   "description": "Cinema Management System - Backend API using Node.js, Express, TypeScript, and TypeORM",
-  "main": "src/app.ts",
+  "main": "src/app.js",
   "scripts": {
-    "start": "ts-node src/server.ts",
-    "dev": "nodemon --watch src/**/*.ts --exec ts-node src/index.ts",
+    "start": "ts-node src/server.js",
+    "dev": "nodemon --watch src/**/*.js --exec ts-node src/index.js",
     "build": "tsc",
     "test": "jest",
     "typeorm": "typeorm-ts-node-commonjs"

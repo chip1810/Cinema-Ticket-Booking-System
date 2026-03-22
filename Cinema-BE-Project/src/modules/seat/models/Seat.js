@@ -1,6 +1,6 @@
 // models/Seat.model.js
 const { Schema, model, Types } = require("mongoose");
-const SeatType = require("../enums/SeatType");
+const SeatType = require("./enums/SeatType");
 
 const SeatSchema = new Schema({
   UUID: { type: String, unique: true, default: () => new Types.ObjectId().toString() },

@@ -1,6 +1,6 @@
 // showtime.routes.js
 const Router = require("express").Router;
-const showtimeController = require("../controllers/showtimeController");
+const {showtimeController} = require("../controllers/showtimeController");
 
 const router = Router();
 

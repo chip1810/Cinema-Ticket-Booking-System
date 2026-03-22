@@ -1,8 +1,9 @@
-import { Server } from "socket.io";
+// socket.js
+const { Server } = require("socket.io");
 
-let io: Server;
+let io;
 
-export const initSocket = (server: any) => {
+const initSocket = (server) => {
   io = new Server(server, {
     cors: { origin: "*" },
   });
@@ -14,7 +15,7 @@ export const initSocket = (server: any) => {
       console.log("📡 event received:", event, args);
     });
 
-    socket.on("join-showtime", (showtimeUUID: string) => {
+    socket.on("join-showtime", (showtimeUUID) => {
       socket.join(showtimeUUID);
       console.log(`🎬 ${socket.id} joined room ${showtimeUUID}`);
     });
@@ -23,9 +24,14 @@ export const initSocket = (server: any) => {
   return io;
 };
 
-export const getIO = () => {
+const getIO = () => {
   if (!io) {
     throw new Error("Socket.io not initialized");
   }
   return io;
+};
+
+module.exports = {
+  initSocket,
+  getIO,
 };
