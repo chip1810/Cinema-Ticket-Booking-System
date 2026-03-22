@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import { SOCKET_URL } from "../config/api";
 import SeatSelection from "./SeatSelection";
 import ConcessionPage from "./customer/concessionPage/ConcessionPage";
 
@@ -19,7 +20,7 @@ export default function BookingFlow() {
 
     // 1. Khởi tạo Socket Duy Nhất
     useEffect(() => {
-        const newSocket = io("http://localhost:3000");
+        const newSocket = io(SOCKET_URL);
 
         newSocket.on("connect", () => {
             console.log("🟢 Socket connected:", newSocket.id);

@@ -1,11 +1,11 @@
-const BASE_URL = `http://localhost:3000`;
+import { API_BASE_URL } from "../config/api";
 
-console.log("BASE_URL:", import.meta.env.VITE_BASE_URL);
+const BASE_URL = API_BASE_URL;
 
 export const movieService = {
 
     async getMovies() {
-        const res = await fetch(`${BASE_URL}/api/movies`);
+        const res = await fetch(`${BASE_URL}/movies`);
 
         if (!res.ok) {
             throw new Error("Failed to fetch movies");
@@ -15,7 +15,7 @@ export const movieService = {
     },
 
     async getMovieByUUID(uuid) {
-        const res = await fetch(`${BASE_URL}/api/movies/uuid/${uuid}`);
+        const res = await fetch(`${BASE_URL}/movies/uuid/${uuid}`);
 
         if (!res.ok) {
             throw new Error("Failed to fetch movie detail");
