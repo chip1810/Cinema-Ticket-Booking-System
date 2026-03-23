@@ -3,9 +3,10 @@ import Header from './components/landingPage/Header';
 import Home from './pages/Home';
 import Footer from './components/landingPage/Footer';
 import MovieDetail from './pages/MovieDetail';
+import GoogleAuthCallback from './pages/GoogleAuthCallback';
+import ForgotPassword from './pages/ForgotPassword';
 import { AuthProvider } from './context/AuthContext';
 import BookingFlow from './pages/BookingFlow';
-import GoogleAuthCallback from './pages/GoogleAuthCallback';
 
 // Manager Imports
 import ManagerLayout from './components/layout/ManagerLayout';
@@ -66,6 +67,7 @@ export default function App() {
             <Route path="/booking/:uuid" element={<BookingFlow />} />
             <Route path="/payment/result" element={<PaymentResultPage />} />
             <Route path="/auth/google/success" element={<GoogleAuthCallback />} />
+             <Route path="/forgot-password" element={<ForgotPassword />} />
           </Route>
 
           {/* Trang Staff: Đứng độc lập, không dính Header/Footer khách hàng */}

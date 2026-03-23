@@ -2,6 +2,7 @@
 const { User } = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const { sendResetPasswordEmail } = require("../../../services/EmailService");
 
 const JWT_SECRET = process.env.JWT_SECRET || "cinema_secret";
 const JWT_EXPIRE = process.env.JWT_EXPIRE || "7d";
@@ -59,9 +60,7 @@ class AuthService {
     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 phút
     await user.save();
 
-    // DEV only: log OTP, trong production gửi email
-    console.log(`[DEV] Reset OTP for ${email}: ${resetToken}`);
-
+    await sendResetPasswordEmail(email, resetToken);
     return { message: "OTP đang được gửi tới bạn" };
   }
 

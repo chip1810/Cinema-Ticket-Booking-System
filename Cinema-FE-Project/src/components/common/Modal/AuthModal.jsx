@@ -17,8 +17,6 @@ export default function AuthModal({ isOpen, onClose, origin }) {
     const { login } = useAuth();
     const navigate = useNavigate();
     const { pathname } = useLocation();
-
-    /** 登录后跳到「主内容」：首页时滚到影片列表；其它页则回首页并带 state 触发滚动 */
     const focusMainContentAfterLogin = useCallback(() => {
         window.setTimeout(() => {
             if (pathname === "/") {
@@ -263,6 +261,19 @@ export default function AuthModal({ isOpen, onClose, origin }) {
                     </svg>
                     Tiếp tục với Google
                 </button>
+
+                {/* Forgot Password — chỉ hiện khi đăng nhập */}
+                {!isRegister && (
+                    <div className="mt-4 text-right">
+                        <button
+                            type="button"
+                            onClick={() => { onClose(); navigate("/forgot-password"); }}
+                            className="text-[#737373] text-sm hover:text-white transition-colors"
+                        >
+                            Quên mật khẩu?
+                        </button>
+                    </div>
+                )}
 
                 <div className="mt-6">
                     <p className="text-[#737373]">

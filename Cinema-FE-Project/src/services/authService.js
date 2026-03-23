@@ -1,0 +1,39 @@
+import axios from "axios";
+
+const API_BASE =
+    process.env.REACT_APP_API_URL?.replace(/\/$/, "") || "http://localhost:5000";
+
+/** Đăng ký tài khoản mới */
+export const register = async ({ email, password, fullName }) => {
+    const res = await axios.post(`${API_BASE}/api/auth/register`, {
+        email,
+        password,
+        fullName,
+    });
+    return res.data;
+};
+
+/** Đăng nhập */
+export const login = async ({ email, password }) => {
+    const res = await axios.post(`${API_BASE}/api/auth/login`, {
+        email,
+        password,
+    });
+    return res.data;
+};
+
+/** Gửi email yêu cầu reset mật khẩu */
+export const requestResetPassword = async (email) => {
+    const res = await axios.post(`${API_BASE}/api/auth/forgot-password`, { email });
+    return res.data;
+};
+
+/** Xác nhận OTP + đặt lại mật khẩu mới */
+export const resetPassword = async ({ email, otp, newPassword }) => {
+    const res = await axios.post(`${API_BASE}/api/auth/reset-password`, {
+        email,
+        token: otp,
+        newPassword,
+    });
+    return res.data;
+};
