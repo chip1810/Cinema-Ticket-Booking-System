@@ -107,7 +107,7 @@ export default function PricingManagementPage() {
                             <div key={i} className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5 group hover:border-red-600/30 transition-all">
                                 <div>
                                     <p className="font-bold text-gray-200">{day}</p>
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-0.5">Modifier: +{formatVND(50000)}</p>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-0.5">Modifier: +{formatVND(30000)}</p>
                                 </div>
                                 <button className="text-xs font-bold text-red-500 hover:underline">Edit Policy</button>
                             </div>

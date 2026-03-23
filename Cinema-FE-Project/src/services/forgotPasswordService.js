@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE =
-    process.env.REACT_APP_API_URL?.replace(/\/$/, "") || "http://localhost:5000";
+    process.env.REACT_APP_API_URL?.replace(/\/$/, "") || "http://localhost:3000";
 
 /** Gửi email yêu cầu reset mật khẩu */
 export const requestResetPassword = async (email) => {

@@ -19,13 +19,12 @@ passport.use(
         let user = await User.findOne({ googleId: profile.id });
 
         if (user) {
-          // Generate JWT token for existing user
           const jwt = require("jsonwebtoken");
           const JWT_SECRET = process.env.JWT_SECRET || "cinema_secret";
           const JWT_EXPIRE = process.env.JWT_EXPIRE || "7d";
 
           const token = jwt.sign(
-            { id: user._id, role: user.role },
+            { id: user._id, email: user.email, role: user.role },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRE }
           );
@@ -37,9 +36,7 @@ passport.use(
         user = await User.findOne({ email: profile.emails[0].value });
 
         if (user) {
-          // Link Google account to existing user
           user.googleId = profile.id;
-          user.avatar = profile.photos[0].value;
           user.authProvider = "google";
           await user.save();
 
@@ -48,7 +45,7 @@ passport.use(
           const JWT_EXPIRE = process.env.JWT_EXPIRE || "7d";
 
           const token = jwt.sign(
-            { id: user._id, role: user.role },
+            { id: user._id, email: user.email, role: user.role },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRE }
           );
@@ -56,14 +53,14 @@ passport.use(
           return done(null, { user, token });
         }
 
-        // Create new user
+        // Create new user — không lấy ảnh Google, để null
         user = await User.create({
           email: profile.emails[0].value,
           fullName: profile.displayName,
           googleId: profile.id,
-          avatar: profile.photos[0].value,
+          avatar: null,
           authProvider: "google",
-          password: null, // No password for OAuth users
+          password: null,
         });
 
         const jwt = require("jsonwebtoken");
@@ -71,7 +68,7 @@ passport.use(
         const JWT_EXPIRE = process.env.JWT_EXPIRE || "7d";
 
         const token = jwt.sign(
-          { id: user._id, role: user.role },
+          { id: user._id, email: user.email, role: user.role },
           JWT_SECRET,
           { expiresIn: JWT_EXPIRE }
         );

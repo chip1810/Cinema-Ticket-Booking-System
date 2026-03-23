@@ -5,6 +5,7 @@ import Footer from './components/landingPage/Footer';
 import MovieDetail from './pages/MovieDetail';
 import GoogleAuthCallback from './pages/GoogleAuthCallback';
 import ForgotPassword from './pages/ForgotPassword';
+import Profile from './pages/Profile';
 import { AuthProvider } from './context/AuthContext';
 import BookingFlow from './pages/BookingFlow';
 
@@ -59,7 +60,7 @@ export default function App() {
       {/* Giữ nguyên class của bạn để bảo toàn màu sắc gốc */}
       <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
         <Routes>
-          
+
           {/* Nhóm trang Public: Sẽ có Header và Footer */}
           <Route element={<CustomerLayout />}>
             <Route path="/" element={<Home />} />
@@ -67,7 +68,8 @@ export default function App() {
             <Route path="/booking/:uuid" element={<BookingFlow />} />
             <Route path="/payment/result" element={<PaymentResultPage />} />
             <Route path="/auth/google/success" element={<GoogleAuthCallback />} />
-             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
 
           {/* Trang Staff: Đứng độc lập, không dính Header/Footer khách hàng */}

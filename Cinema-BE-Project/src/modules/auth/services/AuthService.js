@@ -21,7 +21,7 @@ class AuthService {
     });
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRE }
     );
@@ -40,7 +40,7 @@ class AuthService {
     if (!isMatch) throw new Error("Thông tin đăng nhập không hợp lệ");
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRE }
     );

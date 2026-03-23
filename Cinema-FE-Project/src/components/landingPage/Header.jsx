@@ -5,6 +5,16 @@ import AuthModal from "../common/Modal/AuthModal";
 import { Link, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 
+const API_BASE =
+  process.env.REACT_APP_API_URL?.replace(/\/$/, "") || "http://localhost:3000";
+
+function getAvatarUrl(avatar) {
+  if (!avatar) return `${API_BASE}/uploads/default-avatar.svg`;
+  if (avatar.startsWith("data:")) return avatar;
+  if (avatar.startsWith("http")) return avatar;
+  return `${API_BASE}${avatar}`;
+}
+
 export default function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -112,9 +122,22 @@ export default function Header() {
             {/* avatar */}
             <button
               onClick={() => setShowMenu((prev) => !prev)}
-              className="w-10 h-10 rounded-full bg-primary flex items-center justify-center hover:scale-105 transition"
+              className="w-10 h-10 rounded-full overflow-hidden hover:ring-2 ring-primary transition"
             >
-              <User className="text-white w-5 h-5" />
+              {user?.avatar ? (
+                <img
+                  src={getAvatarUrl(user.avatar)}
+                  alt="avatar"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    e.target.nextSibling.style.display = "flex";
+                  }}
+                />
+              ) : null}
+              <div className={`w-full h-full bg-primary flex items-center justify-center ${user?.avatar ? "hidden" : ""}`}>
+                <User className="text-white w-5 h-5" />
+              </div>
             </button>
 
             {/* dropdown */}

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE =
-    process.env.REACT_APP_API_URL?.replace(/\/$/, "") || "http://localhost:5000";
+    process.env.REACT_APP_API_URL?.replace(/\/$/, "") || "http://localhost:3000";
 
 /** Đăng ký tài khoản mới */
 export const register = async ({ email, password, fullName }) => {
