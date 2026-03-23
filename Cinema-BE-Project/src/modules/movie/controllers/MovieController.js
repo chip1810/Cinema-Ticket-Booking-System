@@ -97,6 +97,19 @@ class MovieController {
       return ApiResponse.error(res, e.message, 404);
     }
   }
+
+  async updateTrailer(req, res) {
+    try {
+      const { trailerUrl } = req.body;
+      if (trailerUrl == null) {
+        return ApiResponse.error(res, "trailerUrl is required", 400);
+      }
+      const movie = await movieService.updateTrailer(req.params.id, trailerUrl);
+      return ApiResponse.success(res, movie, "Trailer updated");
+    } catch (e) {
+      return ApiResponse.error(res, e.message, 404);
+    }
+  }
 }
 
 module.exports = MovieController;

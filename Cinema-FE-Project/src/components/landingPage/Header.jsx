@@ -19,21 +19,11 @@ export default function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const loginBtnRef = useRef(null);
   const menuRef = useRef(null);
 
-  const [modalPos, setModalPos] = useState({ x: 0, y: 0 });
   const [showAuth, setShowAuth] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const isLoggedIn = Boolean(user);
-
-  const openAuthModal = () => {
-    const rect = loginBtnRef.current?.getBoundingClientRect();
-    if (rect) {
-      setModalPos({ x: rect.left, y: rect.bottom });
-    }
-    setShowAuth(true);
-  };
 
   // close dropdown when click outside
   useEffect(() => {
@@ -75,7 +65,7 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 z-50 w-full glass-effect border-b border-white/10 px-6 lg:px-20 py-4 flex items-center justify-between">
+    <header className="fixed top-0 z-50 w-full bg-black/70 backdrop-blur-md border-b border-white/10 px-6 lg:px-20 py-4 flex items-center justify-between">
 
       {/* LEFT */}
       <div className="flex items-center gap-12">
@@ -109,15 +99,8 @@ export default function Header() {
         {/* auth */}
         {!user ? (
           <button
-            ref={loginBtnRef}
-            onClick={() => {
-              const rect = loginBtnRef.current.getBoundingClientRect();
-              setModalPos({
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2
-              });
-              setShowAuth(true);
-            }}
+            type="button"
+            onClick={() => setShowAuth(true)}
             className="flex items-center gap-2 text-slate-300 hover:text-white text-sm font-medium"
           >
             <LogIn className="w-4 h-4" /> Login
@@ -179,11 +162,7 @@ export default function Header() {
 
       </div>
 
-      <AuthModal
-        isOpen={showAuth}
-        onClose={() => setShowAuth(false)}
-        origin={modalPos}
-      />
+      <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
     </header>
   );
 }

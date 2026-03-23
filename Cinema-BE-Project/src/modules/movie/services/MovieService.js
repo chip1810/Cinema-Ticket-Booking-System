@@ -119,6 +119,13 @@ class MovieService {
     return movie.save();
   }
 
+  async updateTrailer(id, trailerUrl) {
+    const movie = await this.getMovieById(id);
+    movie.trailerUrl = trailerUrl;
+    await movie.save();
+    return movie;
+  }
+
   async deleteMovie(id) {
     const movie = await this.getMovieById(id);
     movie.isActive = false;

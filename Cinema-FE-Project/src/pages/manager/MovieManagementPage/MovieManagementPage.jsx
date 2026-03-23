@@ -13,9 +13,23 @@ import {
     X,
     PlusCircle,
     FileImage,
-    Calendar
+    Calendar,
+    Video
 } from 'lucide-react';
 import { managerService } from '../../../services/managerService';
+
+/** BE (Mongoose) trả về `_id` / `UUID`, thường không có `id` → tránh gọi API .../undefined/... */
+function getMovieDocumentId(movie) {
+    if (!movie) return '';
+    const v = movie.id ?? movie._id ?? movie.UUID;
+    return v != null && v !== '' ? String(v) : '';
+}
+
+function getGenreDocumentId(g) {
+    if (!g) return '';
+    const v = g.id ?? g._id ?? g.UUID;
+    return v != null && v !== '' ? String(v) : '';
+}
 
 const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
     // ... (rest of MovieModal logic remains the same, we'll keep it as is below or just edit handleSave)
@@ -47,7 +61,7 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
             setFormData({
                 title: movie.title || '',
                 duration: movie.duration || '',
-                genreIds: movie.genres ? movie.genres.map(g => g.id) : [],
+                genreIds: movie.genres ? movie.genres.map((g) => getGenreDocumentId(g)).filter(Boolean) : [],
                 status: movie.status || 'Now Showing',
                 description: movie.description || '',
                 releaseDate: movie.releaseDate ? new Date(movie.releaseDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -64,7 +78,7 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
         onSave({
             ...formData,
             duration: Number(formData.duration),
-            genreIds: formData.genreIds.map(Number)
+            genreIds: formData.genreIds.map(String),
         });
     };
 
@@ -143,9 +157,12 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
                             className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 min-h-[100px] text-white [&>option]:text-gray-900"
                             required
                         >
-                            {genres.map(g => (
-                                <option key={g.id} value={g.id}>{typeof g.name === 'object' ? g.name?.name : g.name}</option>
-                            ))}
+                            {genres.map((g) => {
+                                const gid = getGenreDocumentId(g);
+                                return (
+                                    <option key={gid} value={gid}>{typeof g.name === 'object' ? g.name?.name : g.name}</option>
+                                );
+                            })}
                         </select>
                     </div>
 
@@ -260,7 +277,7 @@ export default function MovieManagementPage() {
     const handleSave = async (data) => {
         try {
             if (editingMovie) {
-                await managerService.updateMovie(editingMovie.id, data);
+                await managerService.updateMovie(getMovieDocumentId(editingMovie), data);
                 Swal.fire({
                     title: 'Updated!',
                     text: 'Movie details updated successfully.',
@@ -296,12 +313,70 @@ export default function MovieManagementPage() {
     };
 
     const handleDelete = async (id) => {
+        if (!id) return;
         if (!window.confirm('Are you sure you want to delete this movie?')) return;
         try {
             await managerService.deleteMovie(id);
             fetchMovies();
         } catch (err) {
             console.error('Delete failed:', err);
+        }
+    };
+
+    const handleTrailer = async (movie) => {
+        const { value: url } = await Swal.fire({
+            title: 'Thêm Trailer',
+            text: `Phim: ${typeof movie.title === 'object' ? movie.title?.title : movie.title}`,
+            input: 'url',
+            inputLabel: 'Link YouTube Trailer',
+            inputPlaceholder: 'https://www.youtube.com/watch?v=...',
+            inputValue: movie.trailerUrl || '',
+            background: '#1a0607',
+            color: '#fff',
+            confirmButtonColor: '#dc2626',
+            showCancelButton: true,
+            cancelButtonText: 'Hủy',
+            preConfirm: (val) => {
+                if (!val || !val.trim()) {
+                    Swal.showValidationMessage('Vui lòng nhập link trailer');
+                    return false;
+                }
+                return val.trim();
+            },
+        });
+        if (!url) return;
+        const movieId = getMovieDocumentId(movie);
+        if (!movieId) {
+            Swal.fire({
+                title: 'Lỗi!',
+                text: 'Không xác định được ID phim (dữ liệu từ server thiếu _id).',
+                icon: 'error',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626',
+            });
+            return;
+        }
+        try {
+            await managerService.updateTrailer(movieId, url);
+            Swal.fire({
+                title: 'Đã cập nhật!',
+                text: 'Link trailer đã được lưu.',
+                icon: 'success',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626',
+            });
+            fetchMovies();
+        } catch (err) {
+            Swal.fire({
+                title: 'Lỗi!',
+                text: err?.response?.data?.message || 'Không cập nhật được trailer.',
+                icon: 'error',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626',
+            });
         }
     };
 
@@ -317,8 +392,16 @@ export default function MovieManagementPage() {
                 return (titleMatch || genreMatch) && statusMatch;
             })
             .sort((a, b) => {
-                if (sortBy === 'newest') return (b.id || 0) - (a.id || 0);
-                if (sortBy === 'oldest') return (a.id || 0) - (b.id || 0);
+                if (sortBy === 'newest') {
+                    const tb = new Date(b.createdAt || b.updatedAt || 0).getTime();
+                    const ta = new Date(a.createdAt || a.updatedAt || 0).getTime();
+                    return tb - ta;
+                }
+                if (sortBy === 'oldest') {
+                    const tb = new Date(b.createdAt || b.updatedAt || 0).getTime();
+                    const ta = new Date(a.createdAt || a.updatedAt || 0).getTime();
+                    return ta - tb;
+                }
                 if (sortBy === 'title-asc') return a.title.localeCompare(b.title);
                 if (sortBy === 'title-desc') return b.title.localeCompare(a.title);
                 return 0;
@@ -398,17 +481,18 @@ export default function MovieManagementPage() {
                                     <th className="px-8 py-5 font-semibold">Duration</th>
                                     <th className="px-8 py-5 font-semibold">Genre</th>
                                     <th className="px-8 py-5 font-semibold">Status</th>
+                                    <th className="px-8 py-5 font-semibold text-center">Trailer</th>
                                     <th className="px-8 py-5 font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {filteredMovies.map((movie, i) => (
-                                    <tr key={movie.id || i} className="hover:bg-white/[0.02] transition-colors group">
+                                    <tr key={getMovieDocumentId(movie) || i} className="hover:bg-white/[0.02] transition-colors group">
                                         <td className="px-8 py-5">
                                             <div className="flex items-center gap-5">
                                                 <div className="w-14 h-20 bg-gradient-to-tr from-gray-800 to-gray-700 rounded-xl flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-red-600/30 transition-all shadow-lg">
-                                                    {movie.poster ? (
-                                                        <img src={movie.poster} alt="" className="w-full h-full object-cover" />
+                                                    {movie.posterUrl || movie.poster ? (
+                                                        <img src={movie.posterUrl || movie.poster} alt="" className="w-full h-full object-cover" />
                                                     ) : (
                                                         <Clapperboard className="text-gray-600" size={24} />
                                                     )}
@@ -428,9 +512,13 @@ export default function MovieManagementPage() {
                                         </td>
                                         <td className="px-8 py-5 text-gray-400 font-medium">
                                             <div className="flex gap-2 flex-wrap">
-                                                {(movie.genre || '').split(',').map((g, idx) => (
-                                                    <span key={idx} className="bg-white/5 border border-white/5 px-2 py-0.5 rounded text-[10px]">{g.trim()}</span>
-                                                ))}
+                                                {movie.genres?.length
+                                                    ? movie.genres.map((g, idx) => (
+                                                        <span key={getGenreDocumentId(g) || idx} className="bg-white/5 border border-white/5 px-2 py-0.5 rounded text-[10px]">{g.name}</span>
+                                                    ))
+                                                    : (movie.genre || '').split(',').filter(Boolean).map((g, idx) => (
+                                                        <span key={idx} className="bg-white/5 border border-white/5 px-2 py-0.5 rounded text-[10px]">{g.trim()}</span>
+                                                    ))}
                                             </div>
                                         </td>
                                         <td className="px-8 py-5">
@@ -441,8 +529,26 @@ export default function MovieManagementPage() {
                                                 {movie.status}
                                             </span>
                                         </td>
+                                        <td className="px-8 py-5 text-center">
+                                            {movie.trailerUrl ? (
+                                                <span className="text-green-400 text-xs font-medium px-2 py-1 bg-green-500/10 rounded-full">
+                                                    ✓ Có
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-500 text-xs font-medium px-2 py-1 bg-white/5 rounded-full">
+                                                    Chưa có
+                                                </span>
+                                            )}
+                                        </td>
                                         <td className="px-8 py-5">
                                             <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleTrailer(movie)}
+                                                    title="Thêm / sửa Trailer"
+                                                    className="p-2 hover:bg-purple-500/10 rounded-lg text-gray-400 hover:text-purple-400 transition-all outline-none"
+                                                >
+                                                    <Video size={18} />
+                                                </button>
                                                 <button
                                                     onClick={() => handleEdit(movie)}
                                                     className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all outline-none"
@@ -450,7 +556,7 @@ export default function MovieManagementPage() {
                                                     <Edit2 size={18} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(movie.id)}
+                                                    onClick={() => handleDelete(getMovieDocumentId(movie))}
                                                     className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-all outline-none"
                                                 >
                                                     <Trash2 size={18} />

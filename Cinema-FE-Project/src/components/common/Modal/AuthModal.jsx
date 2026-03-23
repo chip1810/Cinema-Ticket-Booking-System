@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { login as loginApi, register } from "../../../services/authService";
 import { useAuth } from "../../../context/AuthContext";
@@ -13,7 +14,7 @@ import {
 const API_BASE =
     process.env.BACKEND_URL?.replace(/\/$/, "") || "http://localhost:3000";
 
-export default function AuthModal({ isOpen, onClose, origin }) {
+export default function AuthModal({ isOpen, onClose }) {
     const { login } = useAuth();
     const navigate = useNavigate();
     const { pathname } = useLocation();
@@ -179,23 +180,22 @@ export default function AuthModal({ isOpen, onClose, origin }) {
         }
     };
 
-    return (
+    /** Portal ra document.body: nếu để modal trong <header> có backdrop-blur, fixed sẽ bị khóa theo header → modal dính mép trên. */
+    const modal = (
         <div
             onClick={onClose}
-            className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500
+            role="presentation"
+            className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-500
             ${show ? "bg-black/80 backdrop-blur-md opacity-100" : "opacity-0 pointer-events-none"}`}
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                style={{
-                    position: "fixed", left: "50%", top: "50%",
-                    transformOrigin: origin
-                        ? `${origin.x - window.innerWidth / 2 + 200}px ${origin.y - window.innerHeight / 2 + 100}px`
-                        : "center"
-                }}
-                className={`relative w-[90%] max-w-[450px] p-8 md:p-14 rounded-md bg-black/90 border border-white/5 shadow-2xl
+                role="dialog"
+                aria-modal="true"
+                style={{ transformOrigin: "center center" }}
+                className={`relative w-[90%] max-w-[450px] max-h-[90vh] overflow-y-auto p-8 md:p-14 rounded-md bg-black/90 border border-white/5 shadow-2xl
                 transform transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-                ${show ? "translate-x-[-50%] translate-y-[-50%] scale-100 opacity-100" : "translate-x-[-50%] translate-y-[-50%] scale-0 opacity-0"}`}
+                ${show ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
             >
                 <button onClick={onClose} className="absolute right-6 top-6 text-gray-500 hover:text-white transition-colors text-2xl font-light">✕</button>
 
@@ -304,4 +304,7 @@ export default function AuthModal({ isOpen, onClose, origin }) {
             </div>
         </div>
     );
+
+    if (typeof document === "undefined") return null;
+    return createPortal(modal, document.body);
 }

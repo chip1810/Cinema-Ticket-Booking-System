@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 require("dotenv").config();
@@ -54,6 +55,7 @@ const voucherRoutes = require("./modules/voucher/routes/voucherRoutes");
 const concessionRoutes = require("./modules/concession/routes/concessionRoutes");
 const orderRoutes = require("./modules/order/routes/orderRoutes");
 const paymentRoutes = require("./modules/payment/routes/paymentRoutes");
+const reviewRoutes = require("./modules/review/routes/reviewRoutes");
 
 // Seed entities
 const Hall = require("./modules/hall/models/Hall");
@@ -76,6 +78,7 @@ app.use("/api/staff", staffRouter);
 app.use("/api/seat", seatRouter);
 app.use("/api/vouchers", voucherRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // ── Serve avatar files (cả uploads/ và uploads/avatars/) ───────────────────
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
@@ -131,6 +134,51 @@ app.post("/api/movies", (req, res) => movie.create(req, res));
 app.put("/api/movies/:id", (req, res) => movie.update(req, res));
 app.delete("/api/movies/:id", (req, res) => movie.delete(req, res));
 app.get("/api/movies/uuid/:uuid", (req, res) => movie.getByUUID(req, res));
+app.patch("/api/manager/movies/:id/trailer", (req, res) => movie.updateTrailer(req, res));
+
+// --- Genre (Manager / Movie form) ---
+app.get("/api/genres", async (_req, res) => {
+  try {
+    const list = await Genre.find().sort({ name: 1 });
+    return ApiResponse.success(res, list, "Genres fetched successfully");
+  } catch (e) {
+    return ApiResponse.error(res, e.message, 500);
+  }
+});
+
+app.post("/api/genres", async (req, res) => {
+  try {
+    const name = req.body?.name;
+    const description = req.body?.description;
+    if (!name || !String(name).trim()) {
+      return ApiResponse.error(res, "name is required", 400);
+    }
+    const g = await Genre.create({
+      name: String(name).trim(),
+      description: description != null ? String(description) : undefined,
+    });
+    return ApiResponse.success(res, g, "Genre created", 201);
+  } catch (e) {
+    return ApiResponse.error(res, e.message, 400);
+  }
+});
+
+app.delete("/api/genres/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const or = [{ UUID: id }];
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      or.push({ _id: id });
+    }
+    const deleted = await Genre.findOneAndDelete({ $or: or });
+    if (!deleted) {
+      return ApiResponse.error(res, "Genre not found", 404);
+    }
+    return ApiResponse.success(res, null, "Genre deleted");
+  } catch (e) {
+    return ApiResponse.error(res, e.message, 400);
+  }
+});
 
 // --- Showtime ---
 app.get("/api/showtimes/:id", (req, res) => showtime.getById(req, res));
