@@ -1,5 +1,7 @@
-import { Star, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { Star, ArrowRight, Play } from "lucide-react";
 import { Link } from "react-router-dom";
+import VideoPlayer from "../movieDetail/VideoPlayer";
 
 export default function MovieGrid({
     movies,
@@ -7,6 +9,8 @@ export default function MovieGrid({
     showViewAllLink = true,
     emptyMessage,
 }) {
+    const [trailer, setTrailer] = useState(null);
+
     if (movies.length === 0 && emptyMessage) {
         return (
             <section className="px-6 lg:px-20 py-12">
@@ -46,7 +50,38 @@ export default function MovieGrid({
                                 }}
                             />
 
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                            {/* Trailer nhanh (mobile / không cần hover) */}
+                            {movie.trailerUrl ? (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setTrailer({
+                                            url: movie.trailerUrl,
+                                            title: movie.title,
+                                        })
+                                    }
+                                    className="absolute top-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/55 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/70 hover:scale-105"
+                                    aria-label="Xem trailer"
+                                >
+                                    <Play className="h-4 w-4 fill-white ml-0.5" />
+                                </button>
+                            ) : null}
+
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end gap-2 p-4">
+                                {movie.trailerUrl ? (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setTrailer({
+                                                url: movie.trailerUrl,
+                                                title: movie.title,
+                                            })
+                                        }
+                                        className="w-full rounded-lg border border-white/25 bg-white/15 py-2 text-center text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/25"
+                                    >
+                                        Xem trailer
+                                    </button>
+                                ) : null}
                                 <Link
                                     to={`/movies/${movie.UUID}`}
                                     className="block w-full bg-primary text-white py-2 rounded-lg font-bold text-sm text-center"
@@ -81,6 +116,13 @@ export default function MovieGrid({
                     </div>
                 ))}
             </div>
+
+            <VideoPlayer
+                isOpen={Boolean(trailer)}
+                onClose={() => setTrailer(null)}
+                videoUrl={trailer?.url}
+                title={trailer?.title}
+            />
         </section>
     );
 }

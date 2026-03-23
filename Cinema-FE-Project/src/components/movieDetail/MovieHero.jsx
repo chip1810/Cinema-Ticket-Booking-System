@@ -24,22 +24,12 @@ export default function MovieHero({ movie, onBook, onTrailer }) {
       <div className="relative max-w-6xl mx-auto min-h-[380px] lg:min-h-[480px] flex flex-col lg:flex-row items-center lg:items-end gap-0 lg:gap-8 p-6 lg:p-10 pb-8">
         {/* Poster */}
         <div className="hidden lg:flex flex-col items-center shrink-0">
-          <div className="relative group">
+          <div className="relative">
             <img
               src={movie.posterUrl || "/no-poster.jpg"}
               alt=""
-              className="w-48 xl:w-56 rounded-2xl shadow-2xl shadow-black/60 transition-transform duration-500 group-hover:scale-[1.03]"
+              className="w-48 xl:w-56 rounded-2xl shadow-2xl shadow-black/60 transition-transform duration-500 hover:scale-[1.03]"
             />
-            {movie.trailerUrl && (
-              <button
-                onClick={onTrailer}
-                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
-              >
-                <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                  <Play className="w-6 h-6 text-white fill-white ml-0.5" />
-                </div>
-              </button>
-            )}
           </div>
         </div>
 
