@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import Hero from "../components/landingPage/Hero";
 import TicketPreview from "../components/landingPage/TicketPreview";
@@ -12,6 +13,24 @@ import { movieService } from "../services/movieService";
 export default function Home() {
     const [nowShowing, setNowShowing] = useState([]);
     const [comingSoon, setComingSoon] = useState([]);
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    /** 登录成功后从其它页跳回首页时，滚动到「正在上映」区块 */
+    useEffect(() => {
+        if (!location.state?.focusMovies) return;
+        const t = window.setTimeout(() => {
+            document.getElementById("movies")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+            navigate(location.pathname + location.search + location.hash, {
+                replace: true,
+                state: {},
+            });
+        }, 150);
+        return () => window.clearTimeout(t);
+    }, [location.state, location.pathname, location.search, location.hash, navigate]);
 
     useEffect(() => {
         movieService.getMovies()
@@ -41,7 +60,9 @@ export default function Home() {
         <main className="flex-1 pt-24">
             <Hero />
             <TicketPreview />
-            <MovieGrid movies={nowShowing} />
+            <section id="movies" className="scroll-mt-24">
+                <MovieGrid movies={nowShowing} />
+            </section>
             <Promotions />
             <ComingSoon movies={comingSoon} />
             <Vouchers />

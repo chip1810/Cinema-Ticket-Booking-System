@@ -19,10 +19,16 @@ class AuthService {
       fullName: data.fullName,
     });
 
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRE }
+    );
+
     const userObj = user.toObject();
     delete userObj.password;
 
-    return userObj;
+    return { user: userObj, accessToken: token, refreshToken: token };
   }
 
   async login(data) {

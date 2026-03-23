@@ -56,12 +56,10 @@ export default function Vouchers() {
                 {voucher.type}
               </span>
             </div>
-
             <div>
               <h3 className="text-xl font-bold text-white mb-1">{voucher.code}</h3>
               <p className="text-slate-300 text-sm">{voucher.description}</p>
             </div>
-
             <div className="flex justify-between items-center mt-2 pt-4 border-t border-white/5">
               <span className="text-xs text-slate-500">{voucher.expiry}</span>
               <div className="flex items-center gap-2 text-primary">
@@ -76,7 +74,6 @@ export default function Vouchers() {
                 )}
               </div>
             </div>
-
             {/* Decorative semi-circles for ticket look */}
             <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-background-dark rounded-full border-r border-white/10" />
             <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-background-dark rounded-full border-l border-white/10" />

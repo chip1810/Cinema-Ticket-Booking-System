@@ -3,8 +3,16 @@ const cors = require("cors");
 const helmet = require("helmet");
 require("dotenv").config();
 
+// Passport must be required BEFORE googleAuth config runs
+const passport = require("passport");
+require("./modules/auth/config/passport");
+
+const { connectMongo } = require("./mongo");
+
+
 // Controllers
 const AuthController = require("./modules/auth/controllers/AuthController");
+const GoogleAuthController = require("./modules/auth/controllers/GoogleAuthController");
 const MovieController = require("./modules/movie/controllers/MovieController");
 const ShowtimeController = require("./controllers/ShowtimeController");
 const PricingController = require("./controllers/PricingController");
@@ -30,6 +38,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
+app.use(passport.initialize());
+// session: false in passport strategies, so no passport.session() needed
 
 app.use("/api/showtimes", showtimeRoutes);
 app.use("/api/admin", adminRoutes);
@@ -39,9 +49,9 @@ app.use("/api/staff", staffRouter);
 app.use("/api/seat", seatRouter);
 app.use("/api/vouchers", voucherRoutes);
 app.use("/api/payment", paymentRoutes);
-
 // Controllers instance
 const auth = new AuthController();
+const googleAuth = require("./modules/auth/controllers/GoogleAuthController");
 const movie = new MovieController();
 const showtime = new ShowtimeController();
 const pricing = new PricingController();
@@ -56,6 +66,11 @@ app.post("/api/auth/register", (req, res) => auth.register(req, res));
 app.post("/api/auth/login", (req, res) => auth.login(req, res));
 app.post("/api/auth/forgot-password", (req, res) => auth.forgotPassword(req, res));
 app.post("/api/auth/reset-password", (req, res) => auth.resetPassword(req, res));
+
+// --- Google OAuth ---
+app.get("/api/auth/google", (req, res, next) => googleAuth.initiate(req, res, next));
+app.get("/api/auth/google/callback", (req, res, next) => googleAuth.callback(req, res, next));
+app.get("/api/auth/google/verify", require("./middlewares/authenticate"), (req, res) => googleAuth.verifyToken(req, res));
 
 // --- Movie ---
 app.get("/api/movies", (req, res) => movie.getAll(req, res));
