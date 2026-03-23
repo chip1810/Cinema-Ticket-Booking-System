@@ -41,7 +41,9 @@ export default function Header() {
 
     setIsSearching(true);
     try {
+      console.log("[Header] Searching for:", query);
       const response = await movieService.searchMovies(query, { limit: 10 });
+      console.log("[Header] Search response:", response);
 
       // Handle different response formats
       let results = [];
@@ -51,10 +53,11 @@ export default function Header() {
         results = response;
       }
 
+      console.log("[Header] Parsed results:", results);
       setSearchResults(results);
       setShowSearchResults(true);
     } catch (error) {
-      console.error("Search error:", error);
+      console.error("[Header] Search error:", error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);

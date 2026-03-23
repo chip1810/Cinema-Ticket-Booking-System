@@ -26,11 +26,12 @@ export const movieService = {
 
     async searchMovies(query, options = {}) {
         const limit = options.limit != null ? options.limit : 10;
-        const params = new URLSearchParams({ q: query, limit: String(limit) });
-        const res = await fetch(`${BASE_URL}/movies/search?${params.toString()}`);
+        const url = `${BASE_URL}/movies/search?q=${encodeURIComponent(query)}&limit=${limit}`;
+        console.log("[movieService] search URL:", url);
+        const res = await fetch(url);
 
         if (!res.ok) {
-            throw new Error("Failed to search movies");
+            throw new Error(`Search failed: ${res.status}`);
         }
 
         return res.json();
