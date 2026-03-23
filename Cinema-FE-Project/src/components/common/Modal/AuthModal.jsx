@@ -3,10 +3,11 @@ import { login as loginApi, register } from "../../../services/authService";
 import { useAuth } from "../../../context/AuthContext";
 import NetflixInput from "../Input/NetflixInput";
 import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
 
 export default function AuthModal({ isOpen, onClose, origin }) {
     const { login } = useAuth();
-
+    const navigate = useNavigate();
     const [isRegister, setIsRegister] = useState(false);
     const [formData, setFormData] = useState({
         email: "",
@@ -71,8 +72,25 @@ export default function AuthModal({ isOpen, onClose, origin }) {
                 setIsRegister(false);
             } else {
                 const res = await loginApi({ email: formData.email, password: formData.password });
-                login(res.data.token);
+
+                // backend trả ApiResponse.success(..., result, ...)
+                // nên token/user nằm trong res.data
+                const token = res?.data?.token;
+                const role = String(res?.data?.user?.role || "").toLowerCase();
+
+                if (!token) throw new Error("Khong nhan duoc token dang nhap");
+
+                login(token);
                 onClose();
+
+                // Redirect theo role
+                if (role === "admin") {
+                    navigate("/admin", { replace: true }); // vào thẳng admin dashboard
+                } else if (role === "manager") {
+                    navigate("/manager", { replace: true });
+                } else {
+                    navigate("/", { replace: true });
+                }
             }
         } catch (err) {
             Swal.fire({
