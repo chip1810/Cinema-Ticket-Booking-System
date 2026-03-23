@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Header from './components/landingPage/Header';
 import Home from './pages/Home';
+import SearchResults from './pages/SearchResults';
 import Footer from './components/landingPage/Footer';
 import MovieDetail from './pages/MovieDetail';
 import GoogleAuthCallback from './pages/GoogleAuthCallback';
@@ -64,6 +65,7 @@ export default function App() {
           {/* Nhóm trang Public: Sẽ có Header và Footer */}
           <Route element={<CustomerLayout />}>
             <Route path="/" element={<Home />} />
+            <Route path="/search" element={<SearchResults />} />
             <Route path="/movies/:uuid" element={<MovieDetail />} />
             <Route path="/booking/:uuid" element={<BookingFlow />} />
             <Route path="/payment/result" element={<PaymentResultPage />} />

@@ -110,6 +110,20 @@ class MovieController {
       return ApiResponse.error(res, e.message, 404);
     }
   }
+
+  async search(req, res) {
+    try {
+      const { q, limit } = req.query;
+      if (!q || q.trim().length === 0) {
+        return ApiResponse.error(res, "Search query is required", 400);
+      }
+      const limitNum = limit != null && limit !== "" ? Number(limit) : 10;
+      const movies = await movieService.searchMovies(q.trim(), limitNum);
+      return ApiResponse.success(res, movies, "Movies found");
+    } catch (e) {
+      return ApiResponse.error(res, e.message, 500);
+    }
+  }
 }
 
 module.exports = MovieController;
