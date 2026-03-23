@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Swal from 'sweetalert2';
 import {
     Clapperboard,
     Plus,
@@ -17,6 +18,8 @@ import {
 import { managerService } from '../../../services/managerService';
 
 const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
+    // ... (rest of MovieModal logic remains the same, we'll keep it as is below or just edit handleSave)
+    // To preserve content, I am copying the full unchanged modal below, down to line 268 logic.
     const [genres, setGenres] = useState([]);
     const [formData, setFormData] = useState({
         title: '',
@@ -101,7 +104,7 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
                             <select
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                className="w-full bg-[#1a0607] border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white [&>option]:text-gray-900"
                             >
                                 <option value="Now Showing">Now Showing</option>
                                 <option value="Coming Soon">Coming Soon</option>
@@ -137,7 +140,7 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
                             multiple
                             value={formData.genreIds}
                             onChange={(e) => setFormData({ ...formData, genreIds: Array.from(e.target.selectedOptions, option => option.value) })}
-                            className="w-full bg-[#1a0607] border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 min-h-[100px] text-white"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 min-h-[100px] text-white [&>option]:text-gray-900"
                             required
                         >
                             {genres.map(g => (
@@ -159,20 +162,34 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm text-gray-400 font-medium">Poster URL</label>
-                            <input
-                                value={formData.posterUrl}
-                                onChange={(e) => setFormData({ ...formData, posterUrl: e.target.value })}
-                                placeholder="https://..."
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 transition-all text-white"
-                            />
+                            <label className="text-sm text-gray-400 font-medium">Poster Upload</label>
+                            <div className="flex gap-4 items-center">
+                                {formData.posterUrl && formData.posterUrl.startsWith('data:image') && (
+                                    <img src={formData.posterUrl} className="h-12 w-10 object-cover rounded-md border border-white/10" alt="Preview" />
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setFormData({ ...formData, posterUrl: reader.result });
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }
+                                    }}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 focus:outline-none focus:border-red-600 transition-all text-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-red-600/20 file:text-red-500 hover:file:bg-red-600/30 text-sm"
+                                />
+                            </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm text-gray-400 font-medium">Trailer URL</label>
+                            <label className="text-sm text-gray-400 font-medium">Trailer URL (Youtube)</label>
                             <input
                                 value={formData.trailerUrl}
                                 onChange={(e) => setFormData({ ...formData, trailerUrl: e.target.value })}
-                                placeholder="https://..."
+                                placeholder="https://youtube.com/watch?v=..."
                                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 transition-all text-white"
                             />
                         </div>
@@ -203,6 +220,8 @@ export default function MovieManagementPage() {
     const [movies, setMovies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
+    const [sortBy, setSortBy] = useState('newest');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingMovie, setEditingMovie] = useState(null);
 
@@ -242,14 +261,37 @@ export default function MovieManagementPage() {
         try {
             if (editingMovie) {
                 await managerService.updateMovie(editingMovie.id, data);
+                Swal.fire({
+                    title: 'Updated!',
+                    text: 'Movie details updated successfully.',
+                    icon: 'success',
+                    background: '#1a0607',
+                    color: '#fff',
+                    confirmButtonColor: '#dc2626'
+                });
             } else {
                 await managerService.createMovie(data);
+                Swal.fire({
+                    title: 'Added!',
+                    text: 'New movie added successfully.',
+                    icon: 'success',
+                    background: '#1a0607',
+                    color: '#fff',
+                    confirmButtonColor: '#dc2626'
+                });
             }
             setIsModalOpen(false);
             fetchMovies();
         } catch (err) {
             console.error('Save failed:', err);
-            setIsModalOpen(false); // For demo, we just close
+            Swal.fire({
+                title: 'Error!',
+                text: err?.response?.data?.message || 'Failed to save movie data.',
+                icon: 'error',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626'
+            });
         }
     };
 
@@ -263,9 +305,25 @@ export default function MovieManagementPage() {
         }
     };
 
-    const filteredMovies = Array.isArray(movies) ? movies.filter(m =>
-        m.title.toLowerCase().includes(searchTerm.toLowerCase())
-    ) : [];
+    const filteredMovies = Array.isArray(movies) 
+        ? movies
+            .filter(m => {
+                const search = searchTerm.toLowerCase();
+                const genresText = m.genres?.map(g => g.name).join(', ') || m.genre || '';
+                const titleMatch = m.title.toLowerCase().includes(search);
+                const genreMatch = genresText.toLowerCase().includes(search);
+                const statusMatch = statusFilter === 'All' || m.status === statusFilter;
+                
+                return (titleMatch || genreMatch) && statusMatch;
+            })
+            .sort((a, b) => {
+                if (sortBy === 'newest') return (b.id || 0) - (a.id || 0);
+                if (sortBy === 'oldest') return (a.id || 0) - (b.id || 0);
+                if (sortBy === 'title-asc') return a.title.localeCompare(b.title);
+                if (sortBy === 'title-desc') return b.title.localeCompare(a.title);
+                return 0;
+            })
+        : [];
 
     return (
         <div className="space-y-8 pb-10">
@@ -283,21 +341,46 @@ export default function MovieManagementPage() {
                 </button>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                     <input
                         type="text"
-                        placeholder="Search by title, genre..."
+                        placeholder="Search articles by title or summary..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-red-600/50 focus:bg-white/10 transition-all"
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-red-600 text-white"
                     />
                 </div>
-                <button className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-gray-400 hover:bg-white/10 hover:text-white transition-all">
-                    <Filter size={18} />
-                    <span>Filter</span>
-                </button>
+                
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 py-2 hover:bg-white/10 transition-all">
+                        <Filter size={16} className="text-gray-500" />
+                        <select 
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="bg-transparent text-sm text-white focus:outline-none cursor-pointer [&>option]:text-gray-900"
+                        >
+                            <option value="All">All Status</option>
+                            <option value="Now Showing">Now Showing</option>
+                            <option value="Coming Soon">Coming Soon</option>
+                            <option value="Stopped">Stopped</option>
+                        </select>
+                    </div>
+
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 py-2 hover:bg-white/10 transition-all">
+                        <select 
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="bg-transparent text-sm text-white focus:outline-none cursor-pointer [&>option]:text-gray-900"
+                        >
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="title-asc">Title (A-Z)</option>
+                            <option value="title-desc">Title (Z-A)</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-sm shadow-xl">

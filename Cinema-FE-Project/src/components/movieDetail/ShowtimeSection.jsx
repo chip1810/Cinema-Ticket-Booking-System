@@ -38,6 +38,10 @@ export default function ShowtimeSection({ showtimes }) {
 
         </div>
       ))}
+<<<<<<< HEAD
+=======
+
+>>>>>>> f77df780274e209b8ff6e296a4f03cf57a63b64a
     </section>
   );
 }

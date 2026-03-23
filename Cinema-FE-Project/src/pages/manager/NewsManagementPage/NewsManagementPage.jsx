@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Newspaper, Plus, Search, Calendar, User, Edit2, Trash2, Loader2, Link as LinkIcon, FileText, X } from 'lucide-react';
+import { Newspaper, Plus, Search, Calendar, User, Edit2, Trash2, Loader2, Link as LinkIcon, FileText, X, Filter } from 'lucide-react';
 import { managerService } from '../../../services/managerService';
 
 const NewsCard = ({ post, onEdit, onDelete }) => (
@@ -114,7 +114,7 @@ const NewsModal = ({ isOpen, onClose, post = null, onSave }) => {
                             <select
                                 value={formData.type}
                                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                className="w-full bg-[#1a0607] border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 text-white [&>option]:text-gray-900"
                             >
                                 <option value="NEWS">News</option>
                                 <option value="PROMOTION">Promotion</option>
@@ -137,20 +137,34 @@ const NewsModal = ({ isOpen, onClose, post = null, onSave }) => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="text-sm text-gray-400 font-medium">Thumbnail URL</label>
-                            <input
-                                value={formData.thumbnailUrl}
-                                onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                                placeholder="https://..."
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 transition-all text-white"
-                            />
+                            <label className="text-sm text-gray-400 font-medium">Thumbnail Upload</label>
+                            <div className="flex gap-4 items-center">
+                                {formData.thumbnailUrl && formData.thumbnailUrl.startsWith('data:image') && (
+                                    <img src={formData.thumbnailUrl} className="h-12 w-20 object-cover rounded-md border border-white/10" alt="Preview" />
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setFormData({ ...formData, thumbnailUrl: reader.result });
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }
+                                    }}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 focus:outline-none focus:border-red-600 transition-all text-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-red-600/20 file:text-red-500 hover:file:bg-red-600/30 text-sm"
+                                />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm text-gray-400 font-medium">Status</label>
                             <select
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                className="w-full bg-[#1a0607] border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 text-white [&>option]:text-gray-900"
                             >
                                 <option value="DRAFT">Draft</option>
                                 <option value="PUBLISHED">Published</option>
@@ -185,6 +199,8 @@ export default function NewsManagementPage() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPost, setEditingPost] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState('newest');
 
     const fetchNews = async () => {
         try {
@@ -241,6 +257,19 @@ export default function NewsManagementPage() {
         }
     };
 
+    const filteredNews = news
+        .filter(n => {
+            const title = typeof n.title === 'object' ? n.title?.title : n.title;
+            const summary = typeof n.summary === 'object' ? n.summary?.summary : n.summary;
+            const search = searchTerm.toLowerCase();
+            return (title?.toLowerCase().includes(search) || summary?.toLowerCase().includes(search));
+        })
+        .sort((a, b) => {
+            if (sortBy === 'newest') return new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt);
+            if (sortBy === 'oldest') return new Date(a.date || a.createdAt) - new Date(b.date || b.createdAt);
+            return 0;
+        });
+
     return (
         <div className="space-y-8 pb-10">
             <div className="flex justify-between items-center">
@@ -257,10 +286,27 @@ export default function NewsManagementPage() {
                 </button>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                    <input type="text" placeholder="Search articles..." className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-red-600 text-white" />
+                    <input
+                        type="text"
+                        placeholder="Search articles by title or summary..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-red-600 text-white"
+                    />
+                </div>
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 py-1">
+                    <Filter size={16} className="text-gray-500" />
+                    <select
+                        className="bg-transparent py-2 text-sm focus:outline-none text-white [&>option]:text-gray-900 cursor-pointer"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                    >
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
                 </div>
             </div>
 
@@ -268,7 +314,7 @@ export default function NewsManagementPage() {
                 <div className="p-20 flex justify-center"><Loader2 className="animate-spin text-red-600" size={40} /></div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {news.map(n => (
+                    {filteredNews.map(n => (
                         <NewsCard
                             key={n.id}
                             post={n}

@@ -47,7 +47,11 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-white/5 pt-8 text-center text-slate-600 text-xs">
+<<<<<<< HEAD
         © 2024 FCINEMA Luxury Cinemas. All Rights Reserved.
+=======
+        © 2024 Starlight Luxury Cinemas. All Rights Reserved.
+>>>>>>> f77df780274e209b8ff6e296a4f03cf57a63b64a
       </div>
     </footer>
   );

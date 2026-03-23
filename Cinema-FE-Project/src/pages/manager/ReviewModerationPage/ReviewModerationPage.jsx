@@ -79,18 +79,15 @@ export default function ReviewModerationPage() {
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Pending');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState('newest');
 
     useEffect(() => {
         const fetchReviews = async () => {
             try {
                 setLoading(true);
                 const response = await managerService.getReviews({ status: activeTab });
-                setReviews(response.data || [
-                    { id: 1, userName: 'Alice Walker', movieTitle: 'Avatar: Way of Water', rating: 5, comment: 'Absolutely stunning visual experience! A must watch on IMAX.', status: 'Pending', date: '2h ago' },
-                    { id: 2, userName: 'John Doe', movieTitle: 'John Wick: Chapter 4', rating: 2, comment: 'Too much violence, the plot was thin. Not my cup of tea.', status: 'Pending', date: '5h ago' },
-                    { id: 3, userName: 'Sarah Connor', movieTitle: 'Avatar: Way of Water', rating: 4, comment: 'Great movie, but a bit too long for my taste.', status: 'Approved', date: 'Yesterday' },
-                    { id: 4, userName: 'Bob Smith', movieTitle: 'M3GAN', rating: 1, comment: 'Worst movie ever. Don\'t waste your money on this trash.', status: 'Pending', date: '1d ago' },
-                ]);
+                setReviews(response.data || []);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -119,18 +116,36 @@ export default function ReviewModerationPage() {
         }
     };
 
+    const filteredReviews = reviews
+        .filter(r => {
+            const user = typeof r.userName === 'object' ? r.userName?.name : r.userName;
+            const movie = typeof r.movieTitle === 'object' ? r.movieTitle?.title : r.movieTitle;
+            const search = searchTerm.toLowerCase();
+            return (user?.toLowerCase().includes(search) || movie?.toLowerCase().includes(search) || r.comment?.toLowerCase().includes(search));
+        })
+        .sort((a, b) => {
+            if (sortBy === 'newest') return new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt);
+            if (sortBy === 'oldest') return new Date(a.date || a.createdAt) - new Date(b.date || b.createdAt);
+            if (sortBy === 'rating-high') return b.rating - a.rating;
+            if (sortBy === 'rating-low') return a.rating - b.rating;
+            return 0;
+        });
+
     return (
         <div className="space-y-8 pb-10">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
                     <h2 className="text-3xl font-bold">Review Moderation</h2>
-                    <p className="text-gray-400 mt-1">Review and manage user comments to maintain a healthy community.</p>
+                    <p className="text-gray-400 mt-1">Manage user comments and maintain community standards.</p>
                 </div>
                 <div className="flex items-center gap-2 bg-white/5 p-1 rounded-2xl border border-white/5">
                     {['Pending', 'Approved', 'Hidden'].map(tab => (
                         <button
                             key={tab}
-                            onClick={() => setActiveTab(tab)}
+                            onClick={() => {
+                                setActiveTab(tab);
+                                setSearchTerm('');
+                            }}
                             className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'text-gray-500 hover:text-white'
                                 }`}
                         >
@@ -140,14 +155,45 @@ export default function ReviewModerationPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Advanced Filters */}
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                    <input
+                        type="text"
+                        placeholder="Search by user, movie or comment..."
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-red-600/50 transition-all"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 py-2 hover:bg-white/10 transition-all">
+                        <Filter size={16} className="text-gray-500" />
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="bg-transparent text-sm text-white focus:outline-none cursor-pointer [&>option]:text-gray-900"
+                        >
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="rating-high">Highest Rating</option>
+                            <option value="rating-low">Lowest Rating</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <div className="lg:col-span-3">
                     {loading ? (
-                        <div className="h-64 flex justify-center items-center"><Loader2 className="animate-spin text-red-600" size={40} /></div>
+                        <div className="h-64 flex justify-center items-center">
+                            <Loader2 className="animate-spin text-red-600" size={40} />
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <AnimatePresence mode="popLayout">
-                                {reviews.map(review => (
+                                {filteredReviews.map(review => (
                                     <ReviewCard
                                         key={review.id}
                                         review={review}
@@ -156,13 +202,13 @@ export default function ReviewModerationPage() {
                                     />
                                 ))}
                             </AnimatePresence>
-                            {reviews.length === 0 && (
+                            {filteredReviews.length === 0 && (
                                 <div className="col-span-full py-20 text-center text-gray-500 bg-white/5 border border-white/10 border-dashed rounded-3xl">
                                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <ThumbsUp size={32} className="opacity-20" />
+                                        <MessageSquare size={32} className="opacity-20" />
                                     </div>
-                                    <p className="font-bold text-xl mb-1">Queue Clear!</p>
-                                    <p className="text-sm">No reviews currently waiting for moderation.</p>
+                                    <p className="font-bold text-xl mb-1">No reviews found</p>
+                                    <p className="text-sm">Try adjusting your filters or search terms.</p>
                                 </div>
                             )}
                         </div>
