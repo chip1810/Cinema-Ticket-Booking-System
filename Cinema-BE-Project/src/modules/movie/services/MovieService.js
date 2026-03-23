@@ -140,12 +140,7 @@ class MovieService {
     return Movie.find({
       $and: [
         { isActive: { $ne: false } },
-        {
-          $or: [
-            { title: searchRegex },
-            { description: searchRegex },
-          ],
-        },
+        { title: searchRegex },
       ],
     })
       .populate('genres')
