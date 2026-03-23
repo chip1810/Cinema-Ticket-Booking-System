@@ -171,7 +171,7 @@ export default function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
-          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Movies</a>
+          <Link className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" to="/movies">Movies</Link>
           <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Venues</a>
           <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Offers</a>
           <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="/manager">Manager Portal</a>

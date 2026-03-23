@@ -32,9 +32,12 @@ export default function MovieGrid({
                 </h2>
 
                 {showViewAllLink ? (
-                    <a className="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+                    <Link
+                        to="/movies"
+                        className="text-primary text-sm font-bold flex items-center gap-1 hover:underline"
+                    >
                         View All Movies <ArrowRight className="w-4 h-4" />
-                    </a>
+                    </Link>
                 ) : null}
             </div>
 
