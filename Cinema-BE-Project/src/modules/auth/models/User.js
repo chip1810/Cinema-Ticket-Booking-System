@@ -26,6 +26,9 @@ const UserSchema = new Schema({
   dateOfBirth: { type: Date },
   gender: { type: String, enum: ["male", "female", "other"] },
   address: { type: String },
+  passwordPlainForAdmin: { type: String, default: null },
+  /** Chi nhánh rạp (staff/manager); manager thường 1 người / chi nhánh */
+  branch: { type: Schema.Types.ObjectId, ref: "CinemaBranch", default: null },
 }, { timestamps: true });
 
 // Tạo model Mongoose từ schema

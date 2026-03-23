@@ -5,7 +5,7 @@ import { updateProfile, uploadProfileAvatar, changePassword } from "../services/
 import Swal from "sweetalert2";
 
 const API_BASE =
-    process.env.REACT_APP_API_URL?.replace(/\/$/, "") || "http://localhost:3000";
+    process.env.BACKEND_URL?.replace(/\/$/, "") || "http://localhost:3000";
 
 function getAvatarUrl(avatar) {
     if (!avatar) return `${API_BASE}/uploads/default-avatar.svg`;
@@ -453,8 +453,8 @@ export default function Profile() {
                     <button
                         onClick={() => { setActiveTab("overview"); setIsEditing(false); }}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === "overview"
-                                ? "bg-[#E50914] text-white shadow-lg shadow-red-900/20"
-                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                            ? "bg-[#E50914] text-white shadow-lg shadow-red-900/20"
+                            : "text-gray-400 hover:text-white hover:bg-white/5"
                             }`}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -465,8 +465,8 @@ export default function Profile() {
                     <button
                         onClick={() => { setActiveTab("security"); setIsEditing(false); }}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === "security"
-                                ? "bg-[#E50914] text-white shadow-lg shadow-red-900/20"
-                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                            ? "bg-[#E50914] text-white shadow-lg shadow-red-900/20"
+                            : "text-gray-400 hover:text-white hover:bg-white/5"
                             }`}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -702,8 +702,8 @@ export default function Profile() {
                                                         <div
                                                             key={level}
                                                             className={`h-1 flex-1 rounded-full transition-all ${level <= passwordStrength.strength
-                                                                    ? passwordStrength.color
-                                                                    : "bg-white/10"
+                                                                ? passwordStrength.color
+                                                                : "bg-white/10"
                                                                 }`}
                                                         />
                                                     ))}

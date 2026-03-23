@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 
 const API_BASE =
-  process.env.REACT_APP_API_URL?.replace(/\/$/, "") || "http://localhost:3000";
+  process.env.BACKEND_URL?.replace(/\/$/, "") || "http://localhost:3000";
 
 function getAvatarUrl(avatar) {
   if (!avatar) return `${API_BASE}/uploads/default-avatar.svg`;
@@ -50,14 +50,19 @@ export default function Header() {
   // handle Profile click
   const handleProfileClick = () => {
     const token = localStorage.getItem("token");
+
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        if (decoded.role === "staff") {
-          navigate("/staff"); // staff redirect to dashboard
+
+        if (decoded.role === "admin") {
+          navigate("/admin"); // 👉 admin vào trang admin
+        } else if (decoded.role === "staff") {
+          navigate("/staff"); // 👉 staff vào dashboard
         } else {
-          navigate("/profile"); // others go to their profile page
+          navigate("/profile"); // 👉 user thường
         }
+
       } catch (err) {
         console.error("Invalid token", err);
         navigate("/login");
@@ -65,6 +70,7 @@ export default function Header() {
     } else {
       navigate("/login");
     }
+
     setShowMenu(false);
   };
 
@@ -81,10 +87,10 @@ export default function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
-          <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Movies</a>
-          <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Venues</a>
-          <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Offers</a>
-          <a className="text-slate-300 hover:text-primary text-sm font-medium" href="#">Membership</a>
+          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Movies</a>
+          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Venues</a>
+          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Offers</a>
+          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="/manager">Manager Portal</a>
         </nav>
       </div>
 

@@ -39,6 +39,10 @@ class AuthService {
     const isMatch = await bcrypt.compare(data.password, user.password);
     if (!isMatch) throw new Error("Thông tin đăng nhập không hợp lệ");
 
+    if (user.isBlocked) {
+      throw new Error("Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.");
+    }
+
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       JWT_SECRET,

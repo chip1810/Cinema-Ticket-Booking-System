@@ -82,7 +82,7 @@ export default function App() {
             }
           />
 
-          {/* Nhóm Admin: Dùng Layout riêng của Admin */}
+          {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
@@ -96,7 +96,7 @@ export default function App() {
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 
-          {/* Nhóm Manager: Dùng Layout riêng của Manager */}
+          {/* Manager Routes */}
           <Route path="/manager" element={<ManagerLayout />}>
             <Route index element={<Navigate to="/manager/dashboard" replace />} />
             <Route path="dashboard" element={<ManagerDashboard />} />
@@ -113,8 +113,8 @@ export default function App() {
 
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
-    </AuthProvider>
+        </Routes >
+      </div >
+    </AuthProvider >
   );
 }
