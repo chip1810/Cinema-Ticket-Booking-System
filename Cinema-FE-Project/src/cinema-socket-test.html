@@ -199,7 +199,7 @@
 
     <script>
 
-        const socket = io("http://localhost:3000");
+        const socket = io("https://cinema-ticket-booking-system-3.onrender.com");
 
         const cinema = document.getElementById("cinema");
 
@@ -292,7 +292,7 @@
             const seatUUIDs = selectedSeats;
             const token = document.getElementById("token").value;
 
-            fetch("http://localhost:3000/api/seat/hold", {
+            fetch("https://cinema-ticket-booking-system-3.onrender.com/api/seat/hold", {
 
                 method: "POST",
                 headers: {
@@ -316,7 +316,7 @@
             const seatUUIDs = selectedSeats;
             const token = document.getElementById("token").value;
 
-            fetch("http://localhost:3000/api/seat/confirm", {
+            fetch("https://cinema-ticket-booking-system-3.onrender.com/api/seat/confirm", {
 
                 method: "POST",
                 headers: {

@@ -28,11 +28,10 @@ function StarRow({ rating, interactive, onChange, size = "md" }) {
           onMouseLeave={() => interactive && setHover(0)}
         >
           <Star
-            className={`${sz[size]} ${
-              s <= (hover || rating)
-                ? "fill-amber-500 text-amber-500"
-                : "text-gray-600"
-            }`}
+            className={`${sz[size]} ${s <= (hover || rating)
+              ? "fill-amber-500 text-amber-500"
+              : "text-gray-600"
+              }`}
           />
         </button>
       ))}
@@ -67,13 +66,17 @@ export default function ReviewSection({ movieUUID }) {
       const res = await fetchReviewsByMovie(movieUUID);
       if (res.success && res.data) {
         setReviews(res.data.reviews || []);
-        setStats(
-          res.data.stats || {
-            average: 0,
-            total: 0,
-            distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
-          }
-        );
+        setStats({
+          average: res.data.stats?.averageRating || 0,
+          total: res.data.stats?.totalApprovedReviews || 0,
+          distribution: res.data.stats?.distribution || {
+            5: 0,
+            4: 0,
+            3: 0,
+            2: 0,
+            1: 0,
+          },
+        });
       }
     } catch (e) {
       console.error(e);
@@ -210,7 +213,9 @@ export default function ReviewSection({ movieUUID }) {
       <div className="grid gap-8 lg:grid-cols-12">
         <div className="lg:col-span-4">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-            <p className="text-4xl font-bold text-center">{stats.average.toFixed(1)}</p>
+            <p className="text-4xl font-bold text-center">
+              {(stats.average || 0).toFixed(1)}
+            </p>
             <div className="flex justify-center my-2">
               <StarRow rating={Math.round(stats.average)} size="md" />
             </div>
@@ -282,9 +287,8 @@ function ReviewItem({ review }) {
         </div>
       </div>
       <p
-        className={`mt-3 text-sm text-slate-300 leading-relaxed ${
-          !open && long ? "line-clamp-3" : ""
-        }`}
+        className={`mt-3 text-sm text-slate-300 leading-relaxed ${!open && long ? "line-clamp-3" : ""
+          }`}
       >
         {review.comment}
       </p>

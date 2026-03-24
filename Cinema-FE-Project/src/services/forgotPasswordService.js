@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE =
-    process.env.BACKEND_URL?.replace(/\/$/, "") || "http://localhost:3000";
+    process.env.BACKEND_URL?.replace(/\/$/, "") || "https://cinema-ticket-booking-system-3.onrender.com";
 
 /** Gửi email yêu cầu reset mật khẩu */
 export const requestResetPassword = async (email) => {

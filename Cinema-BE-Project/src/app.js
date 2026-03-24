@@ -17,22 +17,22 @@ const ApiResponse = require("./utils/ApiResponse");
 // ── Disk storage cho avatar ────────────────────────────────────────────────
 const UPLOADS_DIR = path.join(__dirname, "..", "uploads", "avatars");
 if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-    filename: (_req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
-        cb(null, `avatar_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
-    },
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+    cb(null, `avatar_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
+  },
 });
 const uploadAvatarMulter = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (_req, file, cb) => {
-        if (file.mimetype && file.mimetype.startsWith("image/")) return cb(null, true);
-        cb(new Error("Chỉ chấp nhận file ảnh"));
-    },
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype && file.mimetype.startsWith("image/")) return cb(null, true);
+    cb(new Error("Chỉ chấp nhận file ảnh"));
+  },
 }).single("avatar");
 
 // Controllers
@@ -66,7 +66,7 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(cors());
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(passport.initialize());
 // session: false in passport strategies, so no passport.session() needed
@@ -106,6 +106,8 @@ const dashboard = new DashboardController();
 
 // --- Auth ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
+app.post("/api/auth/verify-email", (req, res) => auth.verifyEmail(req, res));
+app.post("/api/auth/resend-verify-email", (req, res) => auth.resendVerifyEmail(req, res));
 app.post("/api/auth/login", (req, res) => auth.login(req, res));
 app.post("/api/auth/forgot-password", (req, res) => auth.forgotPassword(req, res));
 app.post("/api/auth/reset-password", (req, res) => auth.resetPassword(req, res));
@@ -113,7 +115,7 @@ app.post("/api/auth/reset-password", (req, res) => auth.resetPassword(req, res))
 // --- Profile (Authenticated) ---
 app.get("/api/auth/me", require("./middlewares/authenticate"), (req, res) => profile.getProfile(req, res));
 app.put("/api/auth/profile", require("./middlewares/authenticate"), (req, res) =>
-    profile.updateProfile(req, res)
+  profile.updateProfile(req, res)
 );
 app.post("/api/auth/profile/avatar", require("./middlewares/authenticate"), (req, res) => {
   uploadAvatarMulter(req, res, (err) => {

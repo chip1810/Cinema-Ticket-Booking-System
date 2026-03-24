@@ -47,7 +47,7 @@ class ReviewService {
       or.push({ _id: new mongoose.Types.ObjectId(key) });
     }
 
-    const review = await Review.findOne({ $or: or }).populate("user movie moderatedBy");
+    const review = await Review.findOne({ $or: or }).populate("userId movie moderatedBy");
     if (!review) throw new Error("Review not found");
     return review;
   }
@@ -123,7 +123,7 @@ class ReviewService {
   async getEligibility(movieUUID, userId) {
     const movie = await this._findMovieByUUID(movieUUID);
 
-    const existing = await Review.findOne({ user: userId, movie: movie._id })
+    const existing = await Review.findOne({ userId: userId, movieId: movie._id })
       .select("UUID status rating comment createdAt");
 
     if (existing) {
@@ -177,7 +177,7 @@ class ReviewService {
     }
 
     const review = await Review.create({
-      user: userId,
+      userId: userId,
       movie: movie._id,
       rating,
       comment,
@@ -208,7 +208,7 @@ class ReviewService {
 
     const [rows, total] = await Promise.all([
       Review.find(filter)
-        .populate("user", "fullName email")
+        .populate("userId", "fullName email")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -259,8 +259,8 @@ class ReviewService {
     }
 
     const rows = await Review.find(filter)
-      .populate("user", "fullName email")
-      .populate("movie", "title UUID")
+      .populate("userId", "fullName email")
+      .populate("movieId", "title UUID")
       .populate("moderatedBy", "fullName email")
       .sort({ createdAt: -1 });
 

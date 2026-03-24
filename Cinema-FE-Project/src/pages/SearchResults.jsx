@@ -20,12 +20,12 @@ export default function SearchResults() {
 
   // Fetch genres once
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_BACKEND_URL || "http://localhost:3000"}/api/genres`)
+    fetch(`${import.meta.env.VITE_BACKEND_URL || "https://cinema-ticket-booking-system-3.onrender.com"}/api/genres`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.data) setGenres(data.data);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Fetch movies when query changes

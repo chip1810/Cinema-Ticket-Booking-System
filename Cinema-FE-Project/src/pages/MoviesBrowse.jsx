@@ -6,7 +6,7 @@ import AdvanceFilter, { applyFilters } from "../components/landingPage/AdvanceFi
 import { movieService } from "../services/movieService";
 
 const GENRES_API =
-  `${import.meta.env.VITE_BACKEND_URL || "http://localhost:3000"}/api/genres`;
+  `${import.meta.env.VITE_BACKEND_URL || "https://cinema-ticket-booking-system-3.onrender.com"}/api/genres`;
 
 export default function MoviesBrowse() {
   const [movies, setMovies] = useState([]);
@@ -21,7 +21,7 @@ export default function MoviesBrowse() {
       .then((data) => {
         if (data?.data) setGenres(data.data);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {

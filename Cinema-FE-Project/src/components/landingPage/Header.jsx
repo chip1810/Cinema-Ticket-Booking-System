@@ -1,13 +1,13 @@
 import { Search, LogIn, LogOut, User, X, Loader2 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
-import AuthModal from "../common/Modal/AuthModal";
+import AuthModal from "../auth/AuthModal";
 import { Link, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { movieService } from "../../services/movieService";
 
 const API_BASE =
-  process.env.BACKEND_URL?.replace(/\/$/, "") || "http://localhost:3000";
+  process.env.BACKEND_URL?.replace(/\/$/, "") || "https://cinema-ticket-booking-system-3.onrender.com";
 
 function getAvatarUrl(avatar) {
   if (!avatar) return `${API_BASE}/uploads/default-avatar.svg`;

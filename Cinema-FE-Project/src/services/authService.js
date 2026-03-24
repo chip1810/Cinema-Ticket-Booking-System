@@ -1,39 +1,152 @@
-import axios from "axios";
+import { getBackendOrigin } from "../config/api";
 
-const API_BASE =
-    process.env.BACKEND_URL?.replace(/\/$/, "") || "http://localhost:3000";
+const API_ROOT = getBackendOrigin();
+const BASE_URL = `${API_ROOT}/api/auth`;
 
-/** Đăng ký tài khoản mới */
-export const register = async ({ email, password, fullName }) => {
-    const res = await axios.post(`${API_BASE}/api/auth/register`, {
-        email,
-        password,
-        fullName,
+export const register = async (userData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
     });
-    return res.data;
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      /* empty body */
+    }
+
+    if (!response.ok) {
+      const msg =
+        data.message ||
+        (typeof data === "string" ? data : null) ||
+        `Đăng ký thất bại (${response.status})`;
+      throw new Error(msg);
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-/** Đăng nhập */
-export const login = async ({ email, password }) => {
-    const res = await axios.post(`${API_BASE}/api/auth/login`, {
-        email,
-        password,
+export const login = async (userData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
     });
-    return res.data;
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Login failed");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-/** Gửi email yêu cầu reset mật khẩu */
+export const verifyEmail = async ({ email, otp }) => {
+  try {
+    const response = await fetch(`${BASE_URL}/verify-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, otp }),
+    });
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      /* empty */
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || `Xác thực thất bại (${response.status})`
+      );
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const resendVerifyEmail = async (email) => {
+  try {
+    const response = await fetch(`${BASE_URL}/resend-verify-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Resend failed");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const requestResetPassword = async (email) => {
-    const res = await axios.post(`${API_BASE}/api/auth/forgot-password`, { email });
-    return res.data;
+  try {
+    const response = await fetch(`${BASE_URL}/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Request reset failed");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-/** Xác nhận OTP + đặt lại mật khẩu mới */
 export const resetPassword = async ({ email, otp, newPassword }) => {
-    const res = await axios.post(`${API_BASE}/api/auth/reset-password`, {
-        email,
-        token: otp,
-        newPassword,
+  try {
+    const response = await fetch(`${BASE_URL}/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, token: otp, newPassword }),
     });
-    return res.data;
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Reset password failed");
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
 };

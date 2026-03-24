@@ -38,6 +38,8 @@ import SettingsPage from './pages/admin/SettingsPage/SettingsPage';
 import PaymentResultPage from './pages/PaymentResultPage';
 
 import StaffDashboard from './pages/staff/StaffDashboard';
+import BookingHistoryPage from './pages/customer/BookingHistoryPage/BookingHistoryPage';
+import BookingDetailPage from './pages/customer/BookingDetailPage/BookingDetailPage';
 
 // Layout cho các trang khách hàng (Home, Movie Detail...)
 const CustomerLayout = () => (
@@ -74,6 +76,8 @@ export default function App() {
             <Route path="/auth/google/success" element={<GoogleAuthCallback />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/booking-history" element={<BookingHistoryPage />}/>
+            <Route path="/booking-history/:orderUUID" element={<BookingDetailPage />}/>
           </Route>
 
           {/* Trang Staff: Đứng độc lập, không dính Header/Footer khách hàng */}
