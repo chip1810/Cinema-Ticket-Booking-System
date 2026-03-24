@@ -168,7 +168,12 @@ class PaymentService {
 
         const orderCode = Number(data.orderCode);
         if (!Number.isFinite(orderCode)) {
-            throw new Error("Invalid webhook orderCode");
+            console.warn("⚠️ Webhook không có orderCode (test call)");
+
+            return {
+                ignored: true,
+                reason: "Missing orderCode"
+            };
         }
 
         // 2️⃣ Tìm PaymentTransaction tương ứng
