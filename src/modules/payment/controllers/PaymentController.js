@@ -21,13 +21,21 @@ class PaymentController {
     async payOSWebhook(req, res) {
         try {
             const result = await paymentService.handlePayOSWebhook(req.body);
-            // webhook nên trả 2xx để payOS xác nhận đã nhận
-            return ApiResponse.success(res, result, "Webhook processed");
+
+            return res.status(200).json({
+                success: true,
+                data: result
+            });
         } catch (error) {
-            return ApiResponse.error(res, error.message || "Invalid webhook", 400);
+            console.error("❌ WEBHOOK ERROR:", error.message);
+
+            // ⚠️ QUAN TRỌNG: luôn trả 200
+            return res.status(200).json({
+                success: false,
+                message: error.message
+            });
         }
     }
-
     async getStatus(req, res) {
         if (!req.user) return ApiResponse.error(res, "Unauthorized", 401);
 
