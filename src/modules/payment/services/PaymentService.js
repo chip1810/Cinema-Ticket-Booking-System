@@ -209,7 +209,9 @@ class PaymentService {
         }
 
         // 6️⃣ Kiểm tra thanh toán thành công
-        const paid = verified.success === true && String(data.code) === "00";
+        // ✅ Fix boolean/string issue
+        const paid = (verified.success === true || verified.success === "true") && String(data.code) === "00";
+
         if (!paid) {
             // Không thành công / cancel
             tx.status = PaymentStatus.CANCELLED;
