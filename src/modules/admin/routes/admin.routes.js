@@ -46,6 +46,34 @@ router.get(
   (req, res) => staffController.getAllStaff(req, res)
 );
 
+router.put(
+  "/staff/:id",
+  authenticate,
+  authorize([UserRole.ADMIN]),
+  (req, res) => staffController.updateStaff(req, res)
+);
+
+router.delete(
+  "/staff/:id",
+  authenticate,
+  authorize([UserRole.ADMIN]),
+  (req, res) => staffController.deleteStaff(req, res)
+);
+
+router.patch(
+  "/staff/:id/block",
+  authenticate,
+  authorize([UserRole.ADMIN]),
+  (req, res) => staffController.blockStaff(req, res)
+);
+
+router.patch(
+  "/staff/:id/unblock",
+  authenticate,
+  authorize([UserRole.ADMIN]),
+  (req, res) => staffController.unblockStaff(req, res)
+);
+
 router.post(
   "/branches",
   authenticate,
@@ -58,6 +86,13 @@ router.get(
   authenticate,
   authorize([UserRole.ADMIN]),
   (req, res) => branchController.getAllBranches(req, res)
+);
+
+router.get(
+  "/branches/:id/detail",
+  authenticate,
+  authorize([UserRole.ADMIN]),
+  (req, res) => branchController.getBranchDetail(req, res)
 );
 
 router.put(
