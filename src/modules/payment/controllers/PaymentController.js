@@ -19,6 +19,9 @@ class PaymentController {
     }
 
     async payOSWebhook(req, res) {
+        console.log("🔥🔥 WEBHOOK HIT 🔥🔥");
+        console.log("👉 BODY:", req.body);
+
         try {
             const result = await paymentService.handlePayOSWebhook(req.body);
 
@@ -29,7 +32,6 @@ class PaymentController {
         } catch (error) {
             console.error("❌ WEBHOOK ERROR:", error.message);
 
-            // ⚠️ QUAN TRỌNG: luôn trả 200
             return res.status(200).json({
                 success: false,
                 message: error.message

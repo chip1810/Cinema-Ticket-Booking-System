@@ -157,6 +157,10 @@ class PaymentService {
     }
 
     async handlePayOSWebhook(webhookBody) {
+        console.log("👉 handlePayOSWebhook CALLED");
+
+        // debug raw body
+        console.log("👉 webhookBody:", JSON.stringify(webhookBody));
         // 1️⃣ Verify signature từ PayOS
         const verified =
             process.env.PAYOS_ALLOW_MOCK_WEBHOOK === "true" && webhookBody?.__mock === true
