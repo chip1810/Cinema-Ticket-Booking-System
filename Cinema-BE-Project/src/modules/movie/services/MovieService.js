@@ -84,6 +84,7 @@ class MovieService {
           UUID: s.UUID,
           startTime: s.startTime,
           endTime: s.endTime,
+          status: s.status,
           hall: {
             name: s.hall?.name,
             capacity: s.hall?.capacity,

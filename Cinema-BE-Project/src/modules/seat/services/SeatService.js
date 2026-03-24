@@ -397,7 +397,9 @@ class SeatService {
   async releaseHeldSeatsByCheckoutToken(checkoutToken, userId) {
     let payload;
     try {
-      payload = jwt.verify(checkoutToken, process.env.CHECKOUT_TOKEN_SECRET);
+      payload = jwt.verify(checkoutToken, process.env.CHECKOUT_TOKEN_SECRET, {
+        ignoreExpiration: true, 
+      });
     } catch {
       throw new Error("Checkout token is invalid or expired");
     }

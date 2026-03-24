@@ -9,9 +9,12 @@ export default function MovieGrid({ movies }) {
                     Now Showing
                 </h2>
 
-                <a className="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+                <Link
+                    to="/movies"
+                    className="text-primary text-sm font-bold flex items-center gap-1 hover:underline"
+                >
                     View All Movies <ArrowRight className="w-4 h-4" />
-                </a>
+                </Link>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">

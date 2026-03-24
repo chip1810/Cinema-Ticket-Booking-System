@@ -58,6 +58,25 @@ export const staffService = {
 
     const json = await res.json();
     return json.data;
+  },
+
+  async getOrderDetailByUUID(orderUUID) {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${BASE_URL}/orders/by-uuid/${orderUUID}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    const json = await res.json();
+
+    if (!res.ok || !json?.success) {
+      throw new Error(json?.message || "Failed to fetch order detail by UUID");
+    }
+
+    return json.data;
   }
 
 };

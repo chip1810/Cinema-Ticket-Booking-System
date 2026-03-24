@@ -97,7 +97,7 @@ class PaymentService {
             seats: payload.seatUUIDs || [],
             snacks: payload.snacks || [],
             totalAmount: amount,
-            status: OrderStatus.PAID, // trạng thái mới
+            status: OrderStatus.PENDING, // trạng thái mới
             createdAt: new Date(),
         };
 
@@ -138,7 +138,7 @@ class PaymentService {
             paymentLinkId: payosResp.paymentLinkId || null,
             checkoutUrl: payosResp.checkoutUrl || null,
             amount,
-            status: PaymentStatus.PAID,
+            status: PaymentStatus.PENDING,
             expiresAt,
             orderUUID: orderDoc.UUID, // link tới Order
         });
@@ -316,22 +316,53 @@ class PaymentService {
     async expirePendingTransactions() {
         const now = new Date();
 
-        const result = await PaymentTransaction.updateMany(
-            {
-                status: PaymentStatus.PENDING,
-                expiresAt: { $lte: now },
-            },
-            {
-                $set: {
-                    status: PaymentStatus.CANCELLED,
-                    failReason: "EXPIRED",
-                },
+        const expiredTxs = await PaymentTransaction.find({
+            status: PaymentStatus.PENDING,
+            expiresAt: { $lte: now },
+        }).select("_id user checkoutToken orderUUID orderCode");
+
+        let cancelledCount = 0;
+
+        for (const tx of expiredTxs) {
+            // 1) nhả ghế hold
+            try {
+                await seatService.releaseHeldSeatsByCheckoutToken(
+                    tx.checkoutToken,
+                    String(tx.user)
+                );
+            } catch (e) {
+                console.warn(
+                    `[payment-cleanup] release seats failed for orderCode=${tx.orderCode}:`,
+                    e.message
+                );
             }
-        );
 
-        return result.modifiedCount || 0;
+            // 2) cancel payment tx (idempotent)
+            const updated = await PaymentTransaction.updateOne(
+                { _id: tx._id, status: PaymentStatus.PENDING },
+                {
+                    $set: {
+                        status: PaymentStatus.CANCELLED,
+                        failReason: "EXPIRED",
+                    },
+                }
+            );
+
+            if (updated.modifiedCount > 0) {
+                cancelledCount++;
+
+                // 3) cancel order liên quan (nếu có)
+                if (tx.orderUUID) {
+                    await Order.updateOne(
+                        { UUID: tx.orderUUID, status: { $ne: OrderStatus.PAID } },
+                        { $set: { status: OrderStatus.CANCELLED } }
+                    );
+                }
+            }
+        }
+
+        return cancelledCount;
     }
-
 
     async cancelByUser(orderCode, userId, reason = "USER_CANCELLED") {
         const tx = await PaymentTransaction.findOne({

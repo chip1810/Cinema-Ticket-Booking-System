@@ -103,6 +103,60 @@ class StaffService {
 
     return safeStaff;
   }
+
+  async lookupOrderDetailByUUID(orderUUID) {
+    const order = await Order.findOne({ UUID: orderUUID })
+      .populate("voucher")
+      .lean();
+    if (!order) return null;
+    const tickets = await Ticket.find({ order: order._id })
+      .populate({
+        path: "showtime",
+        populate: [
+          { path: "movie", select: "UUID title posterUrl duration" },
+          { path: "hall", select: "name" },
+        ],
+      })
+      .populate("seat", "seatNumber type")
+      .lean();
+    const items = await OrderItem.find({ order: order._id })
+      .populate("concession", "name")
+      .lean();
+    return {
+      orderUUID: order.UUID,
+      status: order.status,
+      totalAmount: Number(order.totalAmount),
+      channel: order.channel,
+      createdAt: order.createdAt,
+      voucherCode: order.voucher?.code ?? null,
+      tickets: tickets.map((t) => ({
+        ticketUUID: t.UUID,
+        seatNumber: t.seat?.seatNumber,
+        seatType: t.seat?.type,
+        price: Number(t.price || 0),
+        showtime: {
+          UUID: t.showtime?.UUID,
+          startTime: t.showtime?.startTime,
+          endTime: t.showtime?.endTime,
+          movie: t.showtime?.movie
+            ? {
+              UUID: t.showtime.movie.UUID,
+              title: t.showtime.movie.title,
+              posterUrl: t.showtime.movie.posterUrl,
+              duration: t.showtime.movie.duration,
+            }
+            : null,
+          hall: t.showtime?.hall ? { name: t.showtime.hall.name } : null,
+        },
+      })),
+      items: items.map((i) => ({
+        concessionName: i.concession?.name,
+        quantity: i.quantity,
+        price: Number(i.price || 0),
+        subtotal: Number(i.price || 0) * Number(i.quantity || 0),
+      })),
+    };
+  }
 }
 
 module.exports = StaffService;

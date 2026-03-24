@@ -82,6 +82,20 @@ class StaffController {
             return ApiResponse.error(res, "Internal Server Error", 500);
         }
     }
+
+    async lookupOrderDetailByUUID(req, res) {
+  try {
+    const { orderUUID } = req.params;
+    if (!orderUUID) return ApiResponse.error(res, "Order UUID is required", 400);
+
+    const result = await staffService.lookupOrderDetailByUUID(orderUUID);
+    if (!result) return ApiResponse.error(res, "Order not found", 404);
+
+    return ApiResponse.success(res, result, "Order detail retrieved successfully", 200);
+  } catch (error) {
+    return ApiResponse.error(res, "Internal Server Error", 500);
+  }
+}
 }
 
 module.exports = StaffController;

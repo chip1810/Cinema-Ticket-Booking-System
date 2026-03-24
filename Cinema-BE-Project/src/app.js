@@ -54,6 +54,8 @@ const voucherRoutes = require("./modules/voucher/routes/voucherRoutes");
 const concessionRoutes = require("./modules/concession/routes/concessionRoutes");
 const orderRoutes = require("./modules/order/routes/orderRoutes");
 const paymentRoutes = require("./modules/payment/routes/paymentRoutes");
+const reviewRoutes = require("./modules/review/routes/reviewRoutes");
+const genreRoutes = require("./modules/genre/routes/genreRoutes");
 
 // Seed entities
 const Hall = require("./modules/hall/models/Hall");
@@ -76,6 +78,8 @@ app.use("/api/staff", staffRouter);
 app.use("/api/seat", seatRouter);
 app.use("/api/vouchers", voucherRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/genres", genreRoutes);
 
 // ── Serve avatar files (cả uploads/ và uploads/avatars/) ───────────────────
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
@@ -164,8 +168,10 @@ app.get("/api/manager/dashboard/movies", (req, res) => dashboard.getMovieStats(r
 app.get("/api/manager/halls", (req, res) => hallManager.getAllHalls(req, res));
 app.get("/api/manager/halls/:id", (req, res) => hallManager.getHallById(req, res));
 app.post("/api/manager/halls", (req, res) => hallManager.createHall(req, res));
-app.put("/api/manager/halls/:id", (req, res) => hallManager.update(req, res));
+app.put("/api/manager/halls/:id", (req, res) => hallManager.updateHall(req, res));
 app.delete("/api/manager/halls/:id", (req, res) => hallManager.deleteHall(req, res));
+app.get("/api/manager/halls/:id/layout", (req, res) => hallManager.getSeatLayout(req, res));
+app.post("/api/manager/halls/:id/layout", (req, res) => hallManager.setSeatLayout(req, res));
 
 // --- Pricing rules ---
 app.get("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.getByShowtime(req, res));
