@@ -1,7 +1,7 @@
 import { Search, LogIn, LogOut, User } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import AuthModal from "../common/Modal/AuthModal";
+import AuthModal from "../auth/AuthModal";
 import { Link } from "react-router-dom";
 
 export default function Header() {

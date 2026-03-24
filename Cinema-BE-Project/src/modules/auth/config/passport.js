@@ -41,6 +41,8 @@ passport.use(
           user.googleId = profile.id;
           user.avatar = profile.photos[0].value;
           user.authProvider = "google";
+          // Google email already verified by Google
+          if (!user.isVerified) user.isVerified = true;
           await user.save();
 
           const jwt = require("jsonwebtoken");
@@ -64,6 +66,7 @@ passport.use(
           avatar: profile.photos[0].value,
           authProvider: "google",
           password: null, // No password for OAuth users
+          isVerified: true, // Google already verified the email
         });
 
         const jwt = require("jsonwebtoken");

@@ -62,6 +62,8 @@ const dashboard = new DashboardController();
 
 // --- Auth ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
+app.post("/api/auth/verify-email", (req, res) => auth.verifyEmail(req, res));
+app.post("/api/auth/resend-verify-email", (req, res) => auth.resendVerifyEmail(req, res));
 app.post("/api/auth/login", (req, res) => auth.login(req, res));
 app.post("/api/auth/forgot-password", (req, res) => auth.forgotPassword(req, res));
 app.post("/api/auth/reset-password", (req, res) => auth.resetPassword(req, res));
