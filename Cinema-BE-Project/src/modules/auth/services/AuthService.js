@@ -3,6 +3,7 @@ const { User } = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { sendVerifyEmailOtp } = require("../../../utils/emailService");
+const { sendResetPasswordEmail } = require("../../../services/EmailService");
 
 const JWT_SECRET = process.env.JWT_SECRET || "cinema_secret";
 const JWT_EXPIRE = process.env.JWT_EXPIRE || "7d";
@@ -103,7 +104,7 @@ class AuthService {
     await user.save();
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRE }
     );
@@ -150,8 +151,12 @@ class AuthService {
     const isMatch = await bcrypt.compare(data.password, user.password);
     if (!isMatch) throw new Error("Thông tin đăng nhập không hợp lệ");
 
+    if (user.isBlocked) {
+      throw new Error("Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.");
+    }
+
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRE }
     );
@@ -171,9 +176,7 @@ class AuthService {
     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 phút
     await user.save();
 
-    // DEV only: log OTP, trong production gửi email
-    console.log(`[DEV] Reset OTP for ${email}: ${resetToken}`);
-
+    await sendResetPasswordEmail(email, resetToken);
     return { message: "OTP đang được gửi tới bạn" };
   }
 

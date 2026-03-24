@@ -23,6 +23,8 @@ export default function AdminDashboard() {
                 const cinemas = cinemaRes?.data || [];
                 setMovieRevenue(movies);
                 setCinemaRevenue(cinemas);
+                console.log(movies);
+                console.log(cinemas);
 
                 const totalTickets = movies.reduce((s, m) => s + (m.tickets || 0), 0);
                 const totalRev = movies.reduce((s, m) => s + (m.revenue || 0), 0);

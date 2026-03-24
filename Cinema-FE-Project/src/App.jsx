@@ -1,11 +1,13 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Header from './components/landingPage/Header';
 import Home from './pages/Home';
 import Footer from './components/landingPage/Footer';
 import MovieDetail from './pages/MovieDetail';
+import GoogleAuthCallback from './pages/GoogleAuthCallback';
+import ForgotPassword from './pages/ForgotPassword';
+import Profile from './pages/Profile';
 import { AuthProvider } from './context/AuthContext';
 import BookingFlow from './pages/BookingFlow';
-import GoogleAuthCallback from './pages/GoogleAuthCallback';
 
 // Manager Imports
 import ManagerLayout from './components/layout/ManagerLayout';
@@ -31,57 +33,88 @@ import VouchersPage from './pages/admin/VouchersPage/VouchersPage';
 import RevenueReportsPage from './pages/admin/RevenueReportsPage/RevenueReportsPage';
 import CustomerInsightsPage from './pages/admin/CustomerInsightsPage/CustomerInsightsPage';
 import SettingsPage from './pages/admin/SettingsPage/SettingsPage';
+import PaymentResultPage from './pages/PaymentResultPage';
+
+import StaffDashboard from './pages/staff/StaffDashboard';
+
+// Layout cho các trang khách hàng (Home, Movie Detail...)
+const CustomerLayout = () => (
+  <>
+    <Header />
+    <main className="flex-1">
+      <Outlet />
+    </main>
+    <Footer />
+  </>
+);
+
+const PrivateRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
+  if (!token) return <Navigate to="/" replace />;
+  return children;
+};
 
 export default function App() {
   return (
     <AuthProvider>
+      {/* Giữ nguyên class của bạn để bảo toàn màu sắc gốc */}
       <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-        <Header />
+        <Routes>
 
-        <main className="flex-1">
-          <Routes>
-            {/* Public Routes */}
+          {/* Nhóm trang Public: Sẽ có Header và Footer */}
+          <Route element={<CustomerLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/movies/:uuid" element={<MovieDetail />} />
             <Route path="/booking/:uuid" element={<BookingFlow />} />
+            <Route path="/payment/result" element={<PaymentResultPage />} />
             <Route path="/auth/google/success" element={<GoogleAuthCallback />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/profile" element={<Profile />} />
+          </Route>
 
-            {/* Admin Routes */}
-            <Route path="/admin/login" element={<AdminLoginPage />} />
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="staff" element={<StaffPage />} />
-              <Route path="branches" element={<BranchesPage />} />
-              <Route path="vouchers" element={<VouchersPage />} />
-              <Route path="reports" element={<RevenueReportsPage />} />
-              <Route path="customers" element={<CustomerInsightsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
+          {/* Trang Staff: Đứng độc lập, không dính Header/Footer khách hàng */}
+          <Route
+            path="/staff"
+            element={
+              <PrivateRoute>
+                <StaffDashboard />
+              </PrivateRoute>
+            }
+          />
 
-            {/* Manager Routes */}
-            <Route path="/manager" element={<ManagerLayout />}>
-              <Route index element={<Navigate to="/manager/dashboard" replace />} />
-              <Route path="dashboard" element={<ManagerDashboard />} />
-              <Route path="movies" element={<MovieManagementPage />} />
-              <Route path="showtimes" element={<ShowtimeManagementPage />} />
-              <Route path="halls" element={<HallManagementPage />} />
-              <Route path="concessions" element={<ConcessionManagementPage />} />
-              <Route path="pricing" element={<PricingManagementPage />} />
-              <Route path="news" element={<NewsManagementPage />} />
-              <Route path="genres" element={<GenreManagementPage />} />
-              <Route path="banners" element={<BannerManagementPage />} />
-              <Route path="reviews" element={<ReviewModerationPage />} />
-            </Route>
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="staff" element={<StaffPage />} />
+            <Route path="branches" element={<BranchesPage />} />
+            <Route path="vouchers" element={<VouchersPage />} />
+            <Route path="reports" element={<RevenueReportsPage />} />
+            <Route path="customers" element={<CustomerInsightsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
 
-            {/* Catch all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
+          {/* Manager Routes */}
+          <Route path="/manager" element={<ManagerLayout />}>
+            <Route index element={<Navigate to="/manager/dashboard" replace />} />
+            <Route path="dashboard" element={<ManagerDashboard />} />
+            <Route path="movies" element={<MovieManagementPage />} />
+            <Route path="showtimes" element={<ShowtimeManagementPage />} />
+            <Route path="halls" element={<HallManagementPage />} />
+            <Route path="concessions" element={<ConcessionManagementPage />} />
+            <Route path="pricing" element={<PricingManagementPage />} />
+            <Route path="news" element={<NewsManagementPage />} />
+            <Route path="genres" element={<GenreManagementPage />} />
+            <Route path="banners" element={<BannerManagementPage />} />
+            <Route path="reviews" element={<ReviewModerationPage />} />
+          </Route>
 
-        <Footer />
-      </div>
-    </AuthProvider>
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes >
+      </div >
+    </AuthProvider >
   );
 }

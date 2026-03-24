@@ -78,7 +78,7 @@ const ShowtimeModal = ({ isOpen, onClose, onSave }) => {
                             <select
                                 value={formData.movieId}
                                 onChange={(e) => setFormData({ ...formData, movieId: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white [&>option]:text-gray-900"
                                 required
                             >
                                 <option value="">Choose a movie...</option>
@@ -95,7 +95,7 @@ const ShowtimeModal = ({ isOpen, onClose, onSave }) => {
                             <select
                                 value={formData.hallId}
                                 onChange={(e) => setFormData({ ...formData, hallId: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white [&>option]:text-gray-900"
                                 required
                             >
                                 <option value="">Choose a hall...</option>

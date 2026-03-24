@@ -46,6 +46,22 @@ class BranchManagementController {
       return ApiResponse.error(res, "Internal Server Error", 500);
     }
   }
+
+  async getBranchDetail(req, res) {
+    try {
+      const id = req.params.id;
+      if (!id) {
+        return ApiResponse.error(res, "Invalid ID", 400);
+      }
+      const detail = await service.getDetail(id);
+      return ApiResponse.success(res, detail, "Branch detail retrieved successfully", 200);
+    } catch (error) {
+      if (error.message === "Branch not found") {
+        return ApiResponse.error(res, error.message, 404);
+      }
+      return ApiResponse.error(res, "Internal Server Error", 500);
+    }
+  }
 }
 
 module.exports = BranchManagementController;

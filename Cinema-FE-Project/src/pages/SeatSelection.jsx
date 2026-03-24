@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { seatService } from "../services/seatService";
 import useSeatSocket from "../hooks/useSeatSocket";
+import Swal from "sweetalert2";
 export default function SeatSelection({ socket, onNext, savedSeats }) {
     const { uuid } = useParams();
     const [seatData, setSeatData] = useState({
@@ -89,7 +90,22 @@ export default function SeatSelection({ socket, onNext, savedSeats }) {
 
         } catch (error) {
             console.error("❌ [API ERROR] Lỗi giữ ghế:", error.message);
-            alert("Rất tiếc, một số ghế bạn chọn vừa có người khác giữ mất hoặc đã hết hạn. Trung vui lòng chọn lại ghế khác nhé!");
+
+            // Nâng cấp alert lên Swal cho Trung nè
+            Swal.fire({
+                title: 'GHẾ ĐÃ CÓ CHỦ!',
+                text: 'Rất tiếc, một số ghế Trung chọn vừa có người khác nhanh tay giữ mất rồi. Trung vui lòng chọn lại ghế khác nhé!',
+                icon: 'error',
+                background: '#111',
+                color: '#fff',
+                confirmButtonColor: '#E50914',
+                confirmButtonText: 'CHỌN LẠI NGAY',
+                showClass: {
+                    popup: 'animate__animated animate__shakeX' // Hiệu ứng rung nếu Trung có cài animate.css
+                },
+                backdrop: `rgba(0,0,0,0.8)`, // Làm tối nền phía sau để tập trung vào thông báo
+                allowOutsideClick: false,
+            });
         }
     };
     const calculateTotal = () => {

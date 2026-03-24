@@ -48,7 +48,7 @@ export default function AdminSidebar() {
 
     const handleLogout = () => {
         localStorage.removeItem('token');
-        window.location.href = '/admin/login';
+        window.location.href = '/';
     };
 
     return (

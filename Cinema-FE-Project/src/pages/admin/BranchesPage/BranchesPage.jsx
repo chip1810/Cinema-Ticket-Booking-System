@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Plus, Loader2, Edit2, X } from 'lucide-react';
+import { Building2, Plus, Loader2, Edit2, X, Eye } from 'lucide-react';
 import { adminService } from '../../../services/adminService';
+import BranchDetailModal from './BranchDetailModal';
 
 export default function BranchesPage() {
     const [loading, setLoading] = useState(true);
     const [list, setList] = useState([]);
     const [error, setError] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [detailBranchId, setDetailBranchId] = useState(null);
     const [editing, setEditing] = useState(null);
     const [form, setForm] = useState({ name: '', address: '', hotline: '' });
     const [submitErr, setSubmitErr] = useState('');
@@ -46,7 +48,8 @@ export default function BranchesPage() {
         }
         try {
             if (editing) {
-                await adminService.updateBranch(editing.id, form);
+                const bid = editing._id || editing.id;
+                await adminService.updateBranch(bid, form);
             } else {
                 await adminService.createBranch(form);
             }
@@ -93,21 +96,39 @@ export default function BranchesPage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {list.map((b) => (
-                    <div key={b.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors">
+                    <div key={b._id || b.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors">
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-2">
                                 <Building2 className="text-red-500" size={24} />
                                 <h3 className="font-bold">{b.name}</h3>
                             </div>
-                            <button
-                                onClick={() => openEdit(b)}
-                                className="text-gray-400 hover:text-white p-1"
-                            >
-                                <Edit2 size={16} />
-                            </button>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setDetailBranchId(b._id || b.id)}
+                                    className="text-gray-400 hover:text-amber-400 p-1 flex items-center gap-1 text-xs"
+                                    title="Chi tiết phòng chiếu & nhân sự"
+                                >
+                                    <Eye size={16} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => openEdit(b)}
+                                    className="text-gray-400 hover:text-white p-1"
+                                >
+                                    <Edit2 size={16} />
+                                </button>
+                            </div>
                         </div>
                         <p className="text-gray-400 text-sm mb-1">{b.address}</p>
                         <p className="text-amber-400 text-sm font-medium">Hotline: {b.hotline}</p>
+                        <button
+                            type="button"
+                            onClick={() => setDetailBranchId(b._id || b.id)}
+                            className="mt-4 w-full py-2 text-sm rounded-lg border border-white/15 hover:bg-white/10 text-gray-300"
+                        >
+                            Chi tiết chi nhánh
+                        </button>
                     </div>
                 ))}
                 {list.length === 0 && (
@@ -116,6 +137,10 @@ export default function BranchesPage() {
                     </div>
                 )}
             </div>
+
+            {detailBranchId && (
+                <BranchDetailModal branchId={detailBranchId} onClose={() => setDetailBranchId(null)} />
+            )}
 
             {showModal && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowModal(false)}>
