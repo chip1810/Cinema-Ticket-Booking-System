@@ -158,7 +158,7 @@ class PaymentService {
 
     async handlePayOSWebhook(webhookBody) {
         console.log("🔥🔥 WEBHOOK HIT 🔥🔥");
-        console.log("👉 BODY:", JSON.stringify(webhookBody));
+        console.log("👉 BODY:", JSON.stringify(webhookBody, null, 2));
 
         // 1️⃣ Verify signature từ PayOS
         let verified;
@@ -167,6 +167,7 @@ class PaymentService {
                 process.env.PAYOS_ALLOW_MOCK_WEBHOOK === "true" && webhookBody?.__mock === true
                     ? webhookBody
                     : this.payOS.webhooks.verify(webhookBody);
+            console.log("[WEBHOOK] Signature verified successfully");
         } catch (err) {
             console.error("[WEBHOOK] Signature verification failed:", err.message);
             return { ignored: true, reason: "Invalid signature" };
@@ -192,9 +193,11 @@ class PaymentService {
 
         // 4️⃣ Idempotent: tránh xử lý lại
         if (tx.status === PaymentStatus.PAID) {
+            console.log("[WEBHOOK] Transaction already PAID, ignoring");
             return { ignored: true, reason: "Already paid", orderCode, orderUUID: tx.orderUUID };
         }
         if ([PaymentStatus.CANCELLED, PaymentStatus.FAILED].includes(tx.status)) {
+            console.log(`[WEBHOOK] Transaction already finalized as ${tx.status}, ignoring`);
             return { ignored: true, reason: `Already finalized as ${tx.status}`, orderCode, status: tx.status };
         }
 
@@ -209,8 +212,11 @@ class PaymentService {
         }
 
         // 6️⃣ Kiểm tra thanh toán thành công
-        // ✅ Fix boolean/string issue
-        const paid = (verified.success === true || verified.success === "true") && String(data.code) === "00";
+        // ✅ Fix boolean/string issue + debug log
+        const successFlag = verified.success;
+        const paid = (successFlag === true || successFlag === "true" || successFlag === 1 || successFlag === "1")
+            && String(data.code) === "00";
+        console.log("[WEBHOOK] paid check:", { successFlag, dataCode: data.code, paid });
 
         if (!paid) {
             // Không thành công / cancel
@@ -226,12 +232,14 @@ class PaymentService {
                 await Order.updateOne({ UUID: tx.orderUUID }, { $set: { status: OrderStatus.CANCELLED } });
             }
 
-            console.log("[WEBHOOK] Payment failed/cancelled for orderCode:", orderCode);
+            console.log("[WEBHOOK] Payment failed/cancelled for orderCode:", orderCode, "reason:", tx.failReason);
             return { updated: true, orderCode, status: tx.status, reason: tx.failReason };
         }
 
         // 7️⃣ Thanh toán thành công -> confirm booking
         try {
+            console.log("[WEBHOOK] Payment marked as PAID, confirming booking...");
+
             const bookingResult = await seatService.confirmBooking(tx.checkoutToken, String(tx.user));
 
             // Update Order thành PAID
