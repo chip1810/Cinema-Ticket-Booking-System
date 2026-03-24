@@ -10,6 +10,7 @@ export const managerService = {
     getMovieById: (id) => apiClient.get(`/movies/${id}`),
     createMovie: (data) => apiClient.post('/movies', data),
     updateMovie: (id, data) => apiClient.put(`/movies/${id}`, data),
+    updateTrailer: (id, trailerUrl) => apiClient.patch(`/manager/movies/${id}/trailer`, { trailerUrl }),
     deleteMovie: (id) => apiClient.delete(`/movies/${id}`),
 
     // Genre Management

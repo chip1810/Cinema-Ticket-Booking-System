@@ -1,22 +1,38 @@
-import { useEffect, useMemo, useState } from "react";
-import { Star, MessageSquare, Send, Loader2 } from "lucide-react";
-import { reviewService } from "../../services/reviewService";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Star,
+  MessageSquare,
+  Send,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Lock,
+  LogIn,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { fetchReviewsByMovie, submitReview } from "../../services/reviewService";
 
-function Stars({ value, onChange, disabled = false }) {
+function StarRow({ rating, interactive, onChange, size = "md" }) {
+  const [hover, setHover] = useState(0);
+  const sz = { sm: "w-4 h-4", md: "w-6 h-6", lg: "w-8 h-8" };
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((s) => (
         <button
           key={s}
           type="button"
-          disabled={disabled}
-          onClick={() => onChange?.(s)}
-          className={`transition ${disabled ? "cursor-not-allowed opacity-70" : "hover:scale-110"}`}
+          disabled={!interactive}
+          className={interactive ? "cursor-pointer hover:scale-110 transition-transform" : ""}
+          onClick={() => interactive && onChange?.(s)}
+          onMouseEnter={() => interactive && setHover(s)}
+          onMouseLeave={() => interactive && setHover(0)}
         >
           <Star
-            size={18}
-            className={s <= value ? "text-amber-400 fill-amber-400" : "text-slate-600"}
+            className={`${sz[size]} ${
+              s <= (hover || rating)
+                ? "fill-amber-500 text-amber-500"
+                : "text-gray-600"
+            }`}
           />
         </button>
       ))}
@@ -25,208 +41,270 @@ function Stars({ value, onChange, disabled = false }) {
 }
 
 export default function ReviewSection({ movieUUID }) {
-  const { user } = useAuth();
-
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-
+  const { user, loading: authLoading } = useAuth();
   const [reviews, setReviews] = useState([]);
-  const [eligibility, setEligibility] = useState({
-    eligible: false,
-    reason: "Đang kiểm tra...",
-    alreadyReviewed: false,
-    existingReview: null,
+  const [stats, setStats] = useState({
+    average: 0,
+    total: 0,
+    distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
   });
-
-  const [rating, setRating] = useState(5);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState(null);
+  const [formError, setFormError] = useState(null);
 
-  const isLoggedIn = Boolean(user);
+  const isCustomer = user?.role === "customer";
+  const canWrite = Boolean(user && isCustomer);
+  const isGuest = !user && !authLoading;
+  const isLoggedNonCustomer = Boolean(user && !isCustomer);
 
-  const loadReviews = async () => {
-    const res = await reviewService.getMovieReviews(movieUUID, { page: 1, limit: 20 });
-    setReviews(res?.data?.items || []);
-  };
-
-  const loadEligibility = async () => {
-    if (!isLoggedIn) {
-      setEligibility({
-        eligible: false,
-        reason: "Đăng nhập để đánh giá phim",
-        alreadyReviewed: false,
-        existingReview: null,
-      });
-      return;
-    }
-
+  const load = useCallback(async () => {
     try {
-      const res = await reviewService.getEligibility(movieUUID);
-      setEligibility(res?.data || {});
+      setLoading(true);
+      const res = await fetchReviewsByMovie(movieUUID);
+      if (res.success && res.data) {
+        setReviews(res.data.reviews || []);
+        setStats(
+          res.data.stats || {
+            average: 0,
+            total: 0,
+            distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+          }
+        );
+      }
     } catch (e) {
-      setEligibility({
-        eligible: false,
-        reason: e?.response?.data?.message || e?.message || "Không kiểm tra được điều kiện đánh giá",
-        alreadyReviewed: false,
-        existingReview: null,
-      });
+      console.error(e);
+      setReviews([]);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [movieUUID]);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        await Promise.all([loadReviews(), loadEligibility()]);
-      } catch {
-        if (mounted) setError("Không tải được dữ liệu đánh giá");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [movieUUID, isLoggedIn]);
-
-  const canSubmit = useMemo(
-    () => isLoggedIn && eligibility?.eligible && comment.trim().length > 0 && rating >= 1 && rating <= 5,
-    [isLoggedIn, eligibility, comment, rating]
-  );
+    load();
+  }, [load]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!canSubmit || submitting) return;
-
+    setFormError(null);
+    setSuccessMsg(null);
+    if (!canWrite) return;
+    if (rating < 1) {
+      setFormError("Chọn số sao (1–5)");
+      return;
+    }
+    if (!comment.trim()) {
+      setFormError("Vui lòng nhập nội dung đánh giá");
+      return;
+    }
     try {
       setSubmitting(true);
-      setError("");
-
-      await reviewService.submitReview(movieUUID, {
-        rating,
-        comment: comment.trim(),
-      });
-
+      await submitReview({ movieUUID, rating, comment: comment.trim() });
+      setRating(0);
       setComment("");
-      setRating(5);
-
-      await Promise.all([loadReviews(), loadEligibility()]);
-    } catch (e2) {
-      setError(e2?.response?.data?.message || e2?.message || "Gửi đánh giá thất bại");
+      setShowForm(false);
+      setSuccessMsg("Đã gửi! Đánh giá sẽ hiển thị sau khi được duyệt.");
+      window.setTimeout(() => setSuccessMsg(null), 6000);
+    } catch (err) {
+      setFormError(err.message || "Gửi thất bại");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <section className="max-w-6xl mx-auto px-6 pb-16">
-      <h2 className="text-2xl font-bold mb-6">Đánh giá & Bình luận</h2>
+    <section className="max-w-6xl mx-auto px-6 py-12 border-t border-white/10">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <MessageSquare className="w-7 h-7 text-primary" />
+            Đánh giá phim
+          </h2>
+          <p className="text-slate-400 text-sm mt-1">
+            Khách chỉ xem được đánh giá. Chỉ tài khoản khách hàng đăng nhập mới
+            được viết nhận xét.
+          </p>
+        </div>
+        {canWrite && (
+          <button
+            type="button"
+            onClick={() => setShowForm((v) => !v)}
+            className="btn-primary inline-flex items-center gap-2 self-start"
+          >
+            <Send className="w-4 h-4" />
+            {showForm ? "Đóng form" : "Viết đánh giá"}
+          </button>
+        )}
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Form */}
-        <div className="lg:col-span-1 rounded-2xl border border-white/10 bg-black/25 p-5">
-          <h3 className="font-bold mb-4 flex items-center gap-2">
-            <MessageSquare size={16} className="text-red-500" />
-            Viết đánh giá
-          </h3>
+      {isGuest && (
+        <div className="mb-8 flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <Lock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-white">Bạn đang xem với tư cách khách</p>
+            <p className="mt-1">
+              Bạn có thể đọc đánh giá bên dưới. Để góp ý, hãy{" "}
+              <span className="text-primary font-medium">
+                đăng nhập bằng tài khoản khách hàng
+              </span>{" "}
+              (nút <LogIn className="w-3.5 h-3.5 inline align-text-bottom" /> trên
+              thanh menu).
+            </p>
+          </div>
+        </div>
+      )}
 
-          {loading ? (
-            <div className="text-sm text-slate-400 flex items-center gap-2">
-              <Loader2 size={14} className="animate-spin" />
-              Đang tải...
-            </div>
-          ) : (
-            <>
-              <p className="text-sm text-slate-400 mb-3">
-                {eligibility?.eligible
-                  ? "Bạn đủ điều kiện đánh giá phim này."
-                  : eligibility?.reason || "Bạn chưa đủ điều kiện đánh giá."}
-              </p>
+      {isLoggedNonCustomer && (
+        <div className="mb-8 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+          <Lock className="w-5 h-5 shrink-0 mt-0.5" />
+          <p>
+            Tài khoản của bạn không phải khách hàng (ví dụ nhân viên / quản trị),
+            nên không thể gửi đánh giá tại đây. Bạn vẫn có thể xem các nhận xét của
+            người xem.
+          </p>
+        </div>
+      )}
 
-              {eligibility?.alreadyReviewed && eligibility?.existingReview && (
-                <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-200">
-                  Bạn đã gửi đánh giá thành công.
-                </div>
-              )}
+      {successMsg && (
+        <div className="mb-6 rounded-xl border border-green-500/40 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+          {successMsg}
+        </div>
+      )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="text-xs uppercase tracking-widest text-slate-500">Số sao</label>
-                  <div className="mt-2">
-                    <Stars
-                      value={rating}
-                      onChange={setRating}
-                      disabled={!eligibility?.eligible || submitting}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs uppercase tracking-widest text-slate-500">Bình luận</label>
-                  <textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    rows={4}
-                    maxLength={1000}
-                    placeholder="Chia sẻ cảm nhận của bạn..."
-                    disabled={!eligibility?.eligible || submitting}
-                    className="mt-2 w-full rounded-xl bg-black/30 border border-white/10 p-3 text-sm outline-none focus:border-red-500/40 disabled:opacity-60"
-                  />
-                  <p className="mt-1 text-[11px] text-slate-500">{comment.length}/1000</p>
-                </div>
-
-                {error && (
-                  <p className="text-sm text-red-400">{error}</p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={!canSubmit || submitting}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#E50914] hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
-                >
-                  {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                  Gửi đánh giá
-                </button>
-              </form>
-            </>
+      {canWrite && showForm && (
+        <form
+          onSubmit={handleSubmit}
+          className="mb-10 rounded-2xl border border-primary/30 bg-white/5 p-6"
+        >
+          <h3 className="font-semibold mb-4">Đánh giá của bạn</h3>
+          <div className="mb-4">
+            <p className="text-sm text-slate-400 mb-2">Số sao</p>
+            <StarRow rating={rating} interactive onChange={setRating} size="lg" />
+          </div>
+          <div className="mb-4">
+            <label className="text-sm text-slate-400 block mb-2">Nội dung</label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={4}
+              className="w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-primary/50"
+              placeholder="Chia sẻ cảm nhận về phim (không spoiler quá mức)..."
+            />
+          </div>
+          {formError && (
+            <p className="text-sm mb-3 text-red-400">{formError}</p>
           )}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn-primary disabled:opacity-50"
+          >
+            {submitting ? "Đang gửi…" : "Gửi đánh giá"}
+          </button>
+        </form>
+      )}
+
+      <div className="grid gap-8 lg:grid-cols-12">
+        <div className="lg:col-span-4">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <p className="text-4xl font-bold text-center">{stats.average.toFixed(1)}</p>
+            <div className="flex justify-center my-2">
+              <StarRow rating={Math.round(stats.average)} size="md" />
+            </div>
+            <p className="text-center text-sm text-slate-500">
+              {stats.total} lượt đánh giá (đã duyệt)
+            </p>
+            <p className="text-center text-xs text-slate-600 mt-1">trên 5 điểm</p>
+            <div className="mt-6 space-y-2">
+              {[5, 4, 3, 2, 1].map((n) => {
+                const c = stats.distribution[n] || 0;
+                const pct = stats.total ? (c / stats.total) * 100 : 0;
+                return (
+                  <div key={n} className="flex items-center gap-2 text-xs">
+                    <span className="w-3 text-slate-400">{n}</span>
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-amber-500 rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="w-6 text-right text-slate-500">{c}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        {/* List */}
-        <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-black/25 p-5">
-          <h3 className="font-bold mb-4">Đánh giá từ khán giả</h3>
-
+        <div className="lg:col-span-8">
           {loading ? (
-            <div className="text-sm text-slate-400">Đang tải danh sách đánh giá...</div>
-          ) : reviews.length === 0 ? (
-            <div className="text-sm text-slate-500">Chưa có đánh giá nào được hiển thị.</div>
-          ) : (
-            <div className="space-y-3">
-              {reviews.map((r) => (
-                <div
-                  key={r.reviewUUID}
-                  className="rounded-xl border border-white/10 bg-black/30 p-4"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold text-sm">{r.userName || "Anonymous"}</p>
-                    <span className="text-xs text-slate-500">
-                      {r.createdAt ? new Date(r.createdAt).toLocaleString("vi-VN") : ""}
-                    </span>
-                  </div>
-
-                  <div className="mt-2">
-                    <Stars value={Number(r.rating) || 0} disabled />
-                  </div>
-
-                  <p className="mt-2 text-sm text-slate-300 leading-relaxed">{r.comment}</p>
-                </div>
-              ))}
+            <div className="flex justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
             </div>
+          ) : reviews.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/20 py-16 text-center text-slate-500">
+              <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-40" />
+              Chưa có đánh giá nào được duyệt.
+            </div>
+          ) : (
+            <ul className="space-y-4">
+              {reviews.map((r) => (
+                <ReviewItem key={r.id} review={r} />
+              ))}
+            </ul>
           )}
         </div>
       </div>
     </section>
+  );
+}
+
+function ReviewItem({ review }) {
+  const [open, setOpen] = useState(false);
+  const long = (review.comment?.length || 0) > 220;
+  return (
+    <li className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold text-white">{review.userName}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <StarRow rating={review.rating} size="sm" />
+            <span className="text-xs text-slate-500">
+              {review.createdAt
+                ? new Date(review.createdAt).toLocaleDateString("vi-VN")
+                : ""}
+            </span>
+          </div>
+        </div>
+      </div>
+      <p
+        className={`mt-3 text-sm text-slate-300 leading-relaxed ${
+          !open && long ? "line-clamp-3" : ""
+        }`}
+      >
+        {review.comment}
+      </p>
+      {long && (
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="mt-2 text-xs text-primary flex items-center gap-1"
+        >
+          {open ? (
+            <>
+              Thu gọn <ChevronUp className="w-3 h-3" />
+            </>
+          ) : (
+            <>
+              Xem thêm <ChevronDown className="w-3 h-3" />
+            </>
+          )}
+        </button>
+      )}
+    </li>
   );
 }

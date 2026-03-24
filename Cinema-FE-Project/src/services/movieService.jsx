@@ -22,6 +22,18 @@ export const movieService = {
         }
 
         return res.json();
+    },
+
+    async searchMovies(query, options = {}) {
+        const limit = options.limit != null ? options.limit : 10;
+        const url = `${BASE_URL}/movies/search?q=${encodeURIComponent(query)}&limit=${limit}`;
+        const res = await fetch(url);
+
+        if (!res.ok) {
+            throw new Error(`Search failed: ${res.status}`);
+        }
+
+        return res.json();
     }
 
 };

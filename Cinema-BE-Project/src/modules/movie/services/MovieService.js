@@ -120,10 +120,32 @@ class MovieService {
     return movie.save();
   }
 
+  async updateTrailer(id, trailerUrl) {
+    const movie = await this.getMovieById(id);
+    movie.trailerUrl = trailerUrl;
+    await movie.save();
+    return movie;
+  }
+
   async deleteMovie(id) {
     const movie = await this.getMovieById(id);
     movie.isActive = false;
     return movie.save();
+  }
+
+  async searchMovies(query, limit = 10) {
+    // Escape special regex characters to prevent regex errors
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchRegex = new RegExp(escapedQuery, 'i');
+    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+    return Movie.find({
+      $and: [
+        { isActive: { $ne: false } },
+        { title: searchRegex },
+      ],
+    })
+      .populate('genres')
+      .limit(safeLimit);
   }
 }
 

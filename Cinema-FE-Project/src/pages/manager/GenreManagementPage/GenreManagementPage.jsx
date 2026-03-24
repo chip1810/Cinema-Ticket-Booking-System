@@ -3,6 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Hash, Plus, X, Loader2, Trash2, Edit2, Search } from 'lucide-react';
 import { managerService } from '../../../services/managerService';
 
+function getGenreDocumentId(g) {
+    if (!g) return '';
+    const v = g.id ?? g._id ?? g.UUID;
+    return v != null && v !== '' ? String(v) : '';
+}
+
 export default function GenreManagementPage() {
     const [genres, setGenres] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,6 +51,7 @@ export default function GenreManagementPage() {
     };
 
     const handleDelete = async (id) => {
+        if (!id) return;
         if (!window.confirm('Delete this genre?')) return;
         try {
             await managerService.deleteGenre(id);
@@ -87,9 +94,9 @@ export default function GenreManagementPage() {
                 ) : (
                     <div className="flex flex-wrap gap-3">
                         <AnimatePresence>
-                            {genres.map(genre => (
+                            {genres.map((genre) => (
                                 <motion.div
-                                    key={genre.id}
+                                    key={getGenreDocumentId(genre)}
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.8 }}
@@ -99,7 +106,7 @@ export default function GenreManagementPage() {
                                         {typeof genre.name === 'object' ? genre.name?.name : genre.name}
                                     </span>
                                     <button
-                                        onClick={() => handleDelete(genre.id)}
+                                        onClick={() => handleDelete(getGenreDocumentId(genre))}
                                         className="p-1 text-gray-600 hover:text-red-500 transition-colors"
                                     >
                                         <X size={14} />

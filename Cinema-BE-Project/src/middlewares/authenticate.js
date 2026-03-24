@@ -16,8 +16,6 @@ const authenticate = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log("=== JWT DEBUG ===");
-    console.log("decoded:", decoded);
 
     // gán user vào req.user
     req.user = {

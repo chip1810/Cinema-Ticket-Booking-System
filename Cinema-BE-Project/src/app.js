@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 require("dotenv").config();
@@ -84,6 +85,11 @@ app.use("/api/genres", genreRoutes);
 // ── Serve avatar files (cả uploads/ và uploads/avatars/) ───────────────────
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
+// Middlewares
+const authenticate = require("./middlewares/authenticate");
+const authorize = require("./middlewares/roleMiddlewares");
+const { UserRole } = require("./modules/auth/models/User");
+
 // Controllers instance
 const auth = new AuthController();
 const googleAuth = require("./modules/auth/controllers/GoogleAuthController");
@@ -130,17 +136,63 @@ app.get("/api/auth/google/verify", require("./middlewares/authenticate"), (req, 
 
 // --- Movie ---
 app.get("/api/movies", (req, res) => movie.getAll(req, res));
+app.get("/api/movies/search", (req, res) => movie.search(req, res));
 app.get("/api/movies/:id", (req, res) => movie.getById(req, res));
-app.post("/api/movies", (req, res) => movie.create(req, res));
-app.put("/api/movies/:id", (req, res) => movie.update(req, res));
-app.delete("/api/movies/:id", (req, res) => movie.delete(req, res));
+app.post("/api/movies", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => movie.create(req, res));
+app.put("/api/movies/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => movie.update(req, res));
+app.delete("/api/movies/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => movie.delete(req, res));
 app.get("/api/movies/uuid/:uuid", (req, res) => movie.getByUUID(req, res));
+app.patch("/api/manager/movies/:id/trailer", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => movie.updateTrailer(req, res));
+
+// --- Genre (Manager / Movie form) ---
+app.get("/api/genres", async (_req, res) => {
+  try {
+    const list = await Genre.find().sort({ name: 1 });
+    return ApiResponse.success(res, list, "Genres fetched successfully");
+  } catch (e) {
+    return ApiResponse.error(res, e.message, 500);
+  }
+});
+
+app.post("/api/genres", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), async (req, res) => {
+  try {
+    const name = req.body?.name;
+    const description = req.body?.description;
+    if (!name || !String(name).trim()) {
+      return ApiResponse.error(res, "name is required", 400);
+    }
+    const g = await Genre.create({
+      name: String(name).trim(),
+      description: description != null ? String(description) : undefined,
+    });
+    return ApiResponse.success(res, g, "Genre created", 201);
+  } catch (e) {
+    return ApiResponse.error(res, e.message, 400);
+  }
+});
+
+app.delete("/api/genres/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), async (req, res) => {
+  try {
+    const id = req.params.id;
+    const or = [{ UUID: id }];
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      or.push({ _id: id });
+    }
+    const deleted = await Genre.findOneAndDelete({ $or: or });
+    if (!deleted) {
+      return ApiResponse.error(res, "Genre not found", 404);
+    }
+    return ApiResponse.success(res, null, "Genre deleted");
+  } catch (e) {
+    return ApiResponse.error(res, e.message, 400);
+  }
+});
 
 // --- Showtime ---
 app.get("/api/showtimes/:id", (req, res) => showtime.getById(req, res));
-app.post("/api/showtimes", (req, res) => showtime.create(req, res));
-app.put("/api/showtimes/:id", (req, res) => showtime.update(req, res));
-app.delete("/api/showtimes/:id", (req, res) => showtime.delete(req, res));
+app.post("/api/showtimes", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => showtime.create(req, res));
+app.put("/api/showtimes/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => showtime.update(req, res));
+app.delete("/api/showtimes/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => showtime.delete(req, res));
 
 // --- Pricing ---
 app.post("/api/pricing/calculate", (req, res) => pricing.calculate(req, res));
@@ -148,21 +200,21 @@ app.post("/api/pricing/calculate", (req, res) => pricing.calculate(req, res));
 // --- News ---
 app.get("/api/news", (req, res) => news.getAll(req, res));
 app.get("/api/news/:id", (req, res) => news.getById(req, res));
-app.post("/api/manager/news", (req, res) => news.create(req, res));
-app.put("/api/manager/news/:id", (req, res) => news.update(req, res));
-app.patch("/api/manager/news/:id/publish", (req, res) => news.togglePublish(req, res));
-app.delete("/api/manager/news/:id", (req, res) => news.delete(req, res));
+app.post("/api/manager/news", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => news.create(req, res));
+app.put("/api/manager/news/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => news.update(req, res));
+app.patch("/api/manager/news/:id/publish", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => news.togglePublish(req, res));
+app.delete("/api/manager/news/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => news.delete(req, res));
 
 // --- Banner Routes ---
 app.get("/api/banners", (req, res) => banner.getAll(req, res));
-app.post("/api/manager/banners", (req, res) => banner.create(req, res));
-app.put("/api/manager/banners/:id", (req, res) => banner.update(req, res));
-app.patch("/api/manager/banners/:id/toggle", (req, res) => banner.toggle(req, res));
-app.delete("/api/manager/banners/:id", (req, res) => banner.delete(req, res));
+app.post("/api/manager/banners", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => banner.create(req, res));
+app.put("/api/manager/banners/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => banner.update(req, res));
+app.patch("/api/manager/banners/:id/toggle", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => banner.toggle(req, res));
+app.delete("/api/manager/banners/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => banner.delete(req, res));
 
 // --- Dashboard ---
-app.get("/api/manager/dashboard/summary", (req, res) => dashboard.getSummary(req, res));
-app.get("/api/manager/dashboard/movies", (req, res) => dashboard.getMovieStats(req, res));
+app.get("/api/manager/dashboard/summary", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => dashboard.getSummary(req, res));
+app.get("/api/manager/dashboard/movies", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => dashboard.getMovieStats(req, res));
 
 // --- Hall ---
 app.get("/api/manager/halls", (req, res) => hallManager.getAllHalls(req, res));
@@ -174,9 +226,9 @@ app.get("/api/manager/halls/:id/layout", (req, res) => hallManager.getSeatLayout
 app.post("/api/manager/halls/:id/layout", (req, res) => hallManager.setSeatLayout(req, res));
 
 // --- Pricing rules ---
-app.get("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.getByShowtime(req, res));
-app.post("/api/manager/pricing", (req, res) => pricingManager.setRules(req, res));
-app.delete("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.deleteByShowtime(req, res));
+app.get("/api/manager/pricing/:showtimeId", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => pricingManager.getByShowtime(req, res));
+app.post("/api/manager/pricing", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => pricingManager.setRules(req, res));
+app.delete("/api/manager/pricing/:showtimeId", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => pricingManager.deleteByShowtime(req, res));
 
 // --- Seed Route (Dev only) ---
 app.post("/api/seed", async (_req, res) => {
