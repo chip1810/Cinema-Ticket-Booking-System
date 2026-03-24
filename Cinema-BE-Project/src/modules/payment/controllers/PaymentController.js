@@ -19,12 +19,23 @@ class PaymentController {
     }
 
     async payOSWebhook(req, res) {
+        console.log("🔥🔥 WEBHOOK HIT 🔥🔥");
+        console.log("👉 BODY:", req.body);
+
         try {
             const result = await paymentService.handlePayOSWebhook(req.body);
-            // webhook nên trả 2xx để payOS xác nhận đã nhận
-            return ApiResponse.success(res, result, "Webhook processed");
+
+            return res.status(200).json({
+                success: true,
+                data: result
+            });
         } catch (error) {
-            return ApiResponse.error(res, error.message || "Invalid webhook", 400);
+            console.error("❌ WEBHOOK ERROR:", error.message);
+
+            return res.status(200).json({
+                success: false,
+                message: error.message
+            });
         }
     }
 

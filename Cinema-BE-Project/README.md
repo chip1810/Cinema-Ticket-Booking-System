@@ -111,7 +111,7 @@ npm run dev
 npm start
 ```
 
-Server sẽ chạy tại: `http://localhost:3000`
+Server sẽ chạy tại: `https://cinema-ticket-booking-system-3.onrender.com`
 
 ## 📁 Cấu trúc thư mục
 

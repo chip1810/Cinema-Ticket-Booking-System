@@ -11,7 +11,7 @@ import {
 
 /** Create React App: chỉ đọc biến REACT_APP_* — không dùng Vite (import.meta.env) */
 const API_BASE =
-    process.env.BACKEND_URL?.replace(/\/$/, "") || "http://localhost:3000";
+    process.env.BACKEND_URL?.replace(/\/$/, "") || "https://cinema-ticket-booking-system-3.onrender.com";
 
 export default function AuthModal({ isOpen, onClose, origin }) {
     const { login } = useAuth();

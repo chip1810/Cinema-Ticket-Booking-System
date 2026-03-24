@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 
 const API_BASE =
-  process.env.BACKEND_URL?.replace(/\/$/, "") || "http://localhost:3000";
+  process.env.BACKEND_URL?.replace(/\/$/, "") || "https://cinema-ticket-booking-system-3.onrender.com";
 
 function getAvatarUrl(avatar) {
   if (!avatar) return `${API_BASE}/uploads/default-avatar.svg`;
