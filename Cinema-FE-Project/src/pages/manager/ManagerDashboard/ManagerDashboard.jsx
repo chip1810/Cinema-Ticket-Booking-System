@@ -141,45 +141,53 @@ export default memo(function ManagerDashboard() {
     const [selectedOrder, setSelectedOrder] = useState(null);
 
     const fetchData = useCallback(async (isSilent = false) => {
-            try {
-                if (!isSilent) setLoading(true);
-                else setRefreshing(true);
+        try {
+            if (!isSilent) setLoading(true);
+            else setRefreshing(true);
 
-                const [summaryRes, movieRes] = await Promise.all([
-                    managerService.getDashboardStats(),
-                    managerService.getMovieStats()
-                ]);
-                setSummary(summaryRes.data);
-                setMovieStats(movieRes.data.popularMovies || []);
-                setLastUpdated(new Date());
-                setError(null);
-            } catch (err) {
-                console.error('Dashboard error:', err);
-                setError('Failed to sync real-time data');
-            } finally {
-                setLoading(false);
-                setRefreshing(false);
-            }
-        }, []);
+            const [summaryRes, movieRes] = await Promise.all([
+                managerService.getDashboardStats(),
+                managerService.getMovieStats()
+            ]);
+            setSummary(summaryRes.data);
+            setMovieStats(movieRes.data.popularMovies || []);
+            setLastUpdated(new Date());
+            setError(null);
+        } catch (err) {
+            console.error('Dashboard error:', err);
+            setError('Failed to sync real-time data');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, []);
 
-    const handleExport = () => {
-        const link = document.createElement('a');
-        link.href = `${API_BASE_URL}/manager/dashboard/export`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleExport = async () => {
+        try {
+            const data = await managerService.exportDashboardSummary();
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'Cinema_Sales_Report.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Export error:', err);
+            alert('Failed to export report');
+        }
     };
 
     useEffect(() => {
         fetchData();
-        
-        // Polling every 15 seconds for real-time feel
         const interval = setInterval(() => {
             fetchData(true);
         }, 15000);
-
         return () => clearInterval(interval);
     }, [fetchData]);
+
 
     const stats = useMemo(() => summary?.stats || [], [summary?.stats]);
 

@@ -65,6 +65,12 @@ const Hall = require("./modules/hall/models/Hall");
 const Genre = require("./modules/genre/models/Genre");
 
 const app = express();
+
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(express.json({ limit: "50mb" }));
 app.use(cors());
 app.use(helmet({
@@ -151,54 +157,11 @@ app.delete("/api/movies/:id", authenticate, authorize([UserRole.MANAGER, UserRol
 app.get("/api/movies/uuid/:uuid", (req, res) => movie.getByUUID(req, res));
 app.patch("/api/manager/movies/:id/trailer", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => movie.updateTrailer(req, res));
 
-// --- Genre (Manager / Movie form) ---
-app.get("/api/genres", async (_req, res) => {
-  try {
-    const list = await Genre.find().sort({ name: 1 });
-    return ApiResponse.success(res, list, "Genres fetched successfully");
-  } catch (e) {
-    return ApiResponse.error(res, e.message, 500);
-  }
-});
-
-app.post("/api/genres", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), async (req, res) => {
-  try {
-    const name = req.body?.name;
-    const description = req.body?.description;
-    if (!name || !String(name).trim()) {
-      return ApiResponse.error(res, "name is required", 400);
-    }
-    const g = await Genre.create({
-      name: String(name).trim(),
-      description: description != null ? String(description) : undefined,
-    });
-    return ApiResponse.success(res, g, "Genre created", 201);
-  } catch (e) {
-    return ApiResponse.error(res, e.message, 400);
-  }
-});
-
-app.delete("/api/genres/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), async (req, res) => {
-  try {
-    const id = req.params.id;
-    const or = [{ UUID: id }];
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      or.push({ _id: id });
-    }
-    const deleted = await Genre.findOneAndDelete({ $or: or });
-    if (!deleted) {
-      return ApiResponse.error(res, "Genre not found", 404);
-    }
-    return ApiResponse.success(res, null, "Genre deleted");
-  } catch (e) {
-    return ApiResponse.error(res, e.message, 400);
-  }
-});
-
-// --- Genre ---
+// --- Genre Management ---
 app.get("/api/genres", (req, res) => genre.getAll(req, res));
-app.post("/api/genres", (req, res) => genre.create(req, res));
-app.delete("/api/genres/:id", (req, res) => genre.delete(req, res));
+app.post("/api/genres", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => genre.create(req, res));
+app.delete("/api/genres/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => genre.delete(req, res));
+
 
 // --- Showtime ---
 app.get("/api/showtimes/:id", (req, res) => showtime.getById(req, res));
@@ -230,14 +193,15 @@ app.get("/api/manager/dashboard/summary", authenticate, authorize([UserRole.MANA
 app.get("/api/manager/dashboard/movies", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => dashboard.getMovieStats(req, res));
 app.get("/api/manager/dashboard/export", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => dashboard.exportSummary(req, res));
 
-// --- Hall ---
-app.get("/api/manager/halls", (req, res) => hallManager.getAllHalls(req, res));
-app.get("/api/manager/halls/:id", (req, res) => hallManager.getHallById(req, res));
-app.post("/api/manager/halls", (req, res) => hallManager.createHall(req, res));
-app.put("/api/manager/halls/:id", (req, res) => hallManager.updateHall(req, res));
-app.delete("/api/manager/halls/:id", (req, res) => hallManager.deleteHall(req, res));
+// --- Hall Management ---
+app.get("/api/manager/halls", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.getAllHalls(req, res));
+app.get("/api/manager/halls/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.getHallById(req, res));
+app.post("/api/manager/halls", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.createHall(req, res));
+app.put("/api/manager/halls/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.updateHall(req, res));
+app.delete("/api/manager/halls/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.deleteHall(req, res));
 app.get("/api/manager/halls/:id/layout", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.getSeatLayout(req, res));
 app.post("/api/manager/halls/:id/layout", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.setSeatLayout(req, res));
+
 
 // --- Pricing rules ---
 app.get("/api/manager/pricing/:showtimeId", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => pricingManager.getByShowtime(req, res));
@@ -245,10 +209,11 @@ app.post("/api/manager/pricing", authenticate, authorize([UserRole.MANAGER, User
 app.delete("/api/manager/pricing/:showtimeId", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => pricingManager.deleteByShowtime(req, res));
 
 // --- Review Moderation ---
-app.get("/api/reviews", (req, res) => review.getAll(req, res));
+app.get("/api/reviews", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => review.listForModeration(req, res));
 app.get("/api/movies/:movieId/reviews", (req, res) => review.getByMovie(req, res));
-app.patch("/api/reviews/:id/moderate", (req, res) => review.moderate(req, res));
-app.delete("/api/reviews/:id", (req, res) => review.delete(req, res));
+app.patch("/api/reviews/:id/moderate", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => review.moderate(req, res));
+app.delete("/api/reviews/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => review.delete(req, res));
+
 
 // --- Seed Route (Dev only) ---
 app.post("/api/seed", async (_req, res) => {

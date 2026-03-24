@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Newspaper, Plus, Search, Calendar, User, Edit2, Trash2, Loader2, Link as LinkIcon, FileText, X, Filter } from 'lucide-react';
 import { managerService } from '../../../services/managerService';
 
-const NewsCard = ({ post, onEdit, onDelete }) => (
+const NewsCard = React.forwardRef(({ post, onEdit, onDelete }, ref) => (
     <motion.div
+        ref={ref}
         layout
         className="bg-[#1a0607]/40 border border-white/10 rounded-3xl overflow-hidden group hover:bg-white/5 transition-all shadow-xl"
     >
@@ -13,8 +14,8 @@ const NewsCard = ({ post, onEdit, onDelete }) => (
             <div className="absolute top-4 left-4 z-20">
                 <span className="text-[10px] bg-red-600 text-white font-black px-3 py-1 rounded-full uppercase tracking-widest">Promotion</span>
             </div>
-            {post.imageUrl ? (
-                <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+            {(post.thumbnailUrl || post.imageUrl) ? (
+                <img src={post.thumbnailUrl || post.imageUrl} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
             ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-700 bg-white/5"><FileText size={48} /></div>
             )}
@@ -42,7 +43,7 @@ const NewsCard = ({ post, onEdit, onDelete }) => (
             </div>
         </div>
     </motion.div>
-);
+));
 
 const NewsModal = ({ isOpen, onClose, post = null, onSave }) => {
     const [formData, setFormData] = useState({
@@ -316,7 +317,7 @@ export default function NewsManagementPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredNews.map(n => (
                         <NewsCard
-                            key={n.id}
+                            key={n.id || n._id}
                             post={n}
                             onEdit={handleEdit}
                             onDelete={handleDelete}

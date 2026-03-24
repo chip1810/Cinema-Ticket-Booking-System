@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import { MessageSquare, ThumbsUp, Search, Filter, Loader2, Star, AlertCircle, Trash2, EyeOff } from 'lucide-react';
 import { managerService } from '../../../services/managerService';
 
-const ReviewCard = ({ review, onModerate, onDelete }) => {
+const ReviewCard = React.forwardRef(({ review, onModerate, onDelete }, ref) => {
     // Robustly handle different field names (user vs userId, fullName vs name, comment vs content)
     const userName = typeof review.user === 'object' ? (review.user?.fullName || review.user?.name) : (review.userName || 'Anonymous');
     const movieTitle = typeof review.movie === 'object' ? review.movie?.title : (review.movieTitle || 'Unknown Movie');
@@ -12,6 +12,7 @@ const ReviewCard = ({ review, onModerate, onDelete }) => {
     
     return (
     <motion.div
+        ref={ref}
         layout
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -75,7 +76,7 @@ const ReviewCard = ({ review, onModerate, onDelete }) => {
         )}
     </motion.div>
     );
-};
+});
 
 export default function ReviewModerationPage() {
     const [reviews, setReviews] = useState([]);

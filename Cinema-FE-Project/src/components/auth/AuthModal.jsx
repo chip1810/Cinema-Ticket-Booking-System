@@ -94,7 +94,7 @@ export default function AuthModal({ isOpen, onClose, origin }) {
         setMode,
         login,
         onClose,
-        focusMainContentAfterLogin,
+        handleLoginRedirect,
     });
 
     useEffect(() => {

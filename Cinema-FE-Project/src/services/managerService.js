@@ -63,4 +63,7 @@ export const managerService = {
     getReviews: (params) => apiClient.get('/reviews', { params }),
     moderateReview: (id, action) => apiClient.patch(`/reviews/${id}/moderate`, { action }),
     deleteReview: (id) => apiClient.delete(`/reviews/${id}`),
+
+    // Export Reports (Authenticated)
+    exportDashboardSummary: () => apiClient.get('/manager/dashboard/export', { responseType: 'blob' }),
 };

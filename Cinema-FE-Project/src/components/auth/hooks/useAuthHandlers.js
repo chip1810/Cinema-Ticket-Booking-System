@@ -14,7 +14,7 @@ export function useAuthHandlers({
     setMode,
     login,
     onClose,
-    focusMainContentAfterLogin,
+    handleLoginRedirect,
 }) {
     const handleLoginSubmit = useCallback(
         async (e) => {
@@ -22,9 +22,10 @@ export function useAuthHandlers({
             setLoading(true);
             try {
                 const res = await loginApi({ email: formData.email, password: formData.password });
-                login(res.data.token);
+                const token = res.data.token;
+                login(token);
                 onClose();
-                focusMainContentAfterLogin();
+                handleLoginRedirect(token);
             } catch (err) {
                 Swal.fire({
                     icon: "error",
@@ -36,7 +37,7 @@ export function useAuthHandlers({
                 setLoading(false);
             }
         },
-        [formData, login, onClose, focusMainContentAfterLogin, setLoading]
+        [formData, login, onClose, handleLoginRedirect, setLoading]
     );
 
     const handleRegisterSubmit = useCallback(
@@ -95,7 +96,7 @@ export function useAuthHandlers({
                 if (token) {
                     login(token);
                     onClose();
-                    focusMainContentAfterLogin();
+                    handleLoginRedirect(token);
                 } else {
                     setMode("login");
                 }
@@ -110,8 +111,9 @@ export function useAuthHandlers({
                 setLoading(false);
             }
         },
-        [otp, pendingEmail, login, onClose, focusMainContentAfterLogin, setLoading, setMode]
+        [otp, pendingEmail, login, onClose, handleLoginRedirect, setLoading, setMode]
     );
+
 
     const handleResend = useCallback(
         async (setResending) => {

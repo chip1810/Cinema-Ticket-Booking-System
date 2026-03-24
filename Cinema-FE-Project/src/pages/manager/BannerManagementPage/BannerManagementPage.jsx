@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ImageIcon, Plus, Trash2, Edit2, Link as LinkIcon, Eye, MoveUp, MoveDown, Loader2, X } from 'lucide-react';
 import { managerService } from '../../../services/managerService';
 
-const BannerCard = ({ banner, onEdit, onDelete }) => (
+const BannerCard = React.forwardRef(({ banner, onEdit, onDelete }, ref) => (
     <motion.div
+        ref={ref}
         layout
         className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden group hover:border-red-600/30 transition-all flex flex-col md:flex-row shadow-xl"
     >
@@ -48,7 +49,7 @@ const BannerCard = ({ banner, onEdit, onDelete }) => (
             </div>
         </div>
     </motion.div>
-);
+));
 
 const BannerModal = ({ isOpen, onClose, banner = null, onSave }) => {
     const [formData, setFormData] = useState({
@@ -295,7 +296,7 @@ export default function BannerManagementPage() {
                 ) : (
                     banners.map(banner => (
                         <BannerCard
-                            key={banner.id}
+                            key={banner.id || banner._id}
                             banner={banner}
                             onEdit={handleEdit}
                             onDelete={handleDelete}
