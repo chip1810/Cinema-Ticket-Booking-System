@@ -213,7 +213,7 @@ class PaymentService {
 
         // 6️⃣ Kiểm tra thanh toán thành công
         // ✅ Fix boolean/string issue + debug log
-        const successFlag = verified.success;
+        const successFlag = webhookBody.success;
         const paid = (successFlag === true || successFlag === "true" || successFlag === 1 || successFlag === "1")
             && String(data.code) === "00";
         console.log("[WEBHOOK] paid check:", { successFlag, dataCode: data.code, paid });
