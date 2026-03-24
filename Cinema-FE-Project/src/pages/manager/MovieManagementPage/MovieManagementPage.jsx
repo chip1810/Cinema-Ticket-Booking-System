@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import {
@@ -17,9 +17,82 @@ import {
 } from 'lucide-react';
 import { managerService } from '../../../services/managerService';
 
+const GenreMultiSelect = ({ genres, selectedIds, onChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const selectedGenres = genres.filter(g => selectedIds.includes(g._id || g.id));
+
+    const toggleGenre = (genreId) => {
+        const newSelected = selectedIds.includes(genreId)
+            ? selectedIds.filter(id => id !== genreId)
+            : [...selectedIds, genreId];
+        onChange(newSelected);
+    };
+
+    return (
+        <div className="relative">
+            <label className="text-sm text-gray-400 font-medium mb-2 block">Genres</label>
+            <div 
+                onClick={() => setIsOpen(!isOpen)}
+                className="min-h-[52px] w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 cursor-pointer flex flex-wrap gap-2 hover:border-red-600/50 transition-all items-center"
+            >
+                {selectedGenres.length === 0 ? (
+                    <span className="text-gray-500 text-sm ml-1">Select genres...</span>
+                ) : (
+                    selectedGenres.map(g => (
+                        <span 
+                            key={g._id || g.id} 
+                            className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-lg shadow-red-600/20"
+                        >
+                            {g.name}
+                            <X 
+                                size={14} 
+                                className="cursor-pointer hover:text-gray-200" 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleGenre(g._id || g.id);
+                                }}
+                            />
+                        </span>
+                    ))
+                )}
+            </div>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <>
+                        <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute z-20 top-full left-0 right-0 mt-2 bg-[#1a0607] border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto no-scrollbar"
+                        >
+                            {genres.length === 0 ? (
+                                <div className="p-4 text-center text-gray-500 text-sm">No genres available</div>
+                            ) : (
+                                genres.map(g => {
+                                    const isSelected = selectedIds.includes(g._id || g.id);
+                                    return (
+                                        <div 
+                                            key={g._id || g.id}
+                                            onClick={() => toggleGenre(g._id || g.id)}
+                                            className={`p-4 cursor-pointer flex items-center justify-between hover:bg-white/5 transition-colors ${isSelected ? 'bg-red-600/10' : ''}`}
+                                        >
+                                            <span className={`text-sm ${isSelected ? 'text-red-500 font-bold' : 'text-gray-300'}`}>{g.name}</span>
+                                            {isSelected && <PlusCircle size={16} className="text-red-500 rotate-45" />}
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
-    // ... (rest of MovieModal logic remains the same, we'll keep it as is below or just edit handleSave)
-    // To preserve content, I am copying the full unchanged modal below, down to line 268 logic.
     const [genres, setGenres] = useState([]);
     const [formData, setFormData] = useState({
         title: '',
@@ -47,7 +120,7 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
             setFormData({
                 title: movie.title || '',
                 duration: movie.duration || '',
-                genreIds: movie.genres ? movie.genres.map(g => g.id) : [],
+                genreIds: movie.genres ? movie.genres.map(g => g._id || g.id) : [],
                 status: movie.status || 'Now Showing',
                 description: movie.description || '',
                 releaseDate: movie.releaseDate ? new Date(movie.releaseDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -64,7 +137,7 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
         onSave({
             ...formData,
             duration: Number(formData.duration),
-            genreIds: formData.genreIds.map(Number)
+            genreIds: formData.genreIds // Already IDs, no mapping to Number
         });
     };
 
@@ -99,17 +172,20 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
                                 required
                             />
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 relative">
                             <label className="text-sm text-gray-400 font-medium">Status</label>
-                            <select
-                                value={formData.status}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white [&>option]:text-gray-900"
-                            >
-                                <option value="Now Showing">Now Showing</option>
-                                <option value="Coming Soon">Coming Soon</option>
-                                <option value="Stopped">Stopped</option>
-                            </select>
+                            <div className="relative">
+                                <select
+                                    value={formData.status}
+                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 appearance-none text-white [&>option]:text-gray-900 cursor-pointer"
+                                >
+                                    <option value="Now Showing">Now Showing</option>
+                                    <option value="Coming Soon">Coming Soon</option>
+                                    <option value="Stopped">Stopped</option>
+                                </select>
+                                <MoreHorizontal size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none rotate-90" />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm text-gray-400 font-medium">Duration (minutes)</label>
@@ -134,20 +210,11 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm text-gray-400 font-medium">Genres (Hold Ctrl to select multiple)</label>
-                        <select
-                            multiple
-                            value={formData.genreIds}
-                            onChange={(e) => setFormData({ ...formData, genreIds: Array.from(e.target.selectedOptions, option => option.value) })}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-red-600 min-h-[100px] text-white [&>option]:text-gray-900"
-                            required
-                        >
-                            {genres.map(g => (
-                                <option key={g.id} value={g.id}>{typeof g.name === 'object' ? g.name?.name : g.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <GenreMultiSelect 
+                        genres={genres} 
+                        selectedIds={formData.genreIds}
+                        onChange={(ids) => setFormData({ ...formData, genreIds: ids })}
+                    />
 
                     <div className="space-y-2">
                         <label className="text-sm text-gray-400 font-medium">Description</label>
@@ -164,24 +231,31 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
                         <div className="space-y-2">
                             <label className="text-sm text-gray-400 font-medium">Poster Upload</label>
                             <div className="flex gap-4 items-center">
-                                {formData.posterUrl && formData.posterUrl.startsWith('data:image') && (
+                                {formData.posterUrl && (
                                     <img src={formData.posterUrl} className="h-12 w-10 object-cover rounded-md border border-white/10" alt="Preview" />
                                 )}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                        const file = e.target.files[0];
-                                        if (file) {
-                                            const reader = new FileReader();
-                                            reader.onloadend = () => {
-                                                setFormData({ ...formData, posterUrl: reader.result });
-                                            };
-                                            reader.readAsDataURL(file);
-                                        }
-                                    }}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 focus:outline-none focus:border-red-600 transition-all text-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-red-600/20 file:text-red-500 hover:file:bg-red-600/30 text-sm"
-                                />
+                                <label className="flex-1 cursor-pointer">
+                                    <div className="w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 hover:bg-white/10 transition-all text-center">
+                                        <span className="text-xs text-red-500 font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+                                            <FileImage size={16}/> Choose file
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    setFormData({ ...formData, posterUrl: reader.result });
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                        className="hidden"
+                                    />
+                                </label>
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -199,13 +273,13 @@ const MovieModal = ({ isOpen, onClose, movie = null, onSave }) => {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-2xl font-bold transition-all text-white"
+                            className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-2xl font-bold transition-all text-white active:scale-95"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold shadow-lg shadow-red-600/20 transition-all"
+                            className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold shadow-lg shadow-red-600/20 transition-all active:scale-95"
                         >
                             {movie ? 'Save Changes' : 'Add Movie'}
                         </button>
@@ -225,27 +299,22 @@ export default function MovieManagementPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingMovie, setEditingMovie] = useState(null);
 
-    const fetchMovies = async () => {
+    const fetchMovies = useCallback(async () => {
         try {
             setLoading(true);
             const response = await managerService.getMovies();
-            setMovies(response.data || response); // Handle different response formats
+            setMovies(response.data || response);
         } catch (err) {
             console.error('Failed to fetch movies:', err);
-            // Fallback data for demo
-            setMovies([
-                { id: 1, title: 'Avatar: Way of Water', duration: '192 min', genre: 'Action, Sci-Fi', status: 'Now Showing' },
-                { id: 2, title: 'John Wick: Chapter 4', duration: '169 min', genre: 'Action, Thriller', status: 'Now Showing' },
-                { id: 3, title: 'Scream VI', duration: '122 min', genre: 'Horror, Mystery', status: 'Ended' },
-            ]);
+            setMovies([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchMovies();
-    }, []);
+    }, [fetchMovies]);
 
     const handleCreate = () => {
         setEditingMovie(null);
@@ -260,7 +329,7 @@ export default function MovieManagementPage() {
     const handleSave = async (data) => {
         try {
             if (editingMovie) {
-                await managerService.updateMovie(editingMovie.id, data);
+                await managerService.updateMovie(editingMovie._id || editingMovie.id, data);
                 Swal.fire({
                     title: 'Updated!',
                     text: 'Movie details updated successfully.',
@@ -296,12 +365,41 @@ export default function MovieManagementPage() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this movie?')) return;
-        try {
-            await managerService.deleteMovie(id);
-            fetchMovies();
-        } catch (err) {
-            console.error('Delete failed:', err);
+        const result = await Swal.fire({
+            title: 'Delete this movie?',
+            text: "All associated showtimes will also be deleted.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#1a0607',
+            confirmButtonText: 'Yes, delete it!',
+            background: '#1a0607',
+            color: '#fff'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await managerService.deleteMovie(id);
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: 'Movie removed successfully.',
+                    icon: 'success',
+                    background: '#1a0607',
+                    color: '#fff',
+                    confirmButtonColor: '#dc2626'
+                });
+                fetchMovies();
+            } catch (err) {
+                console.error('Delete failed:', err);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to delete movie.',
+                    icon: 'error',
+                    background: '#1a0607',
+                    color: '#fff',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
         }
     };
 
@@ -317,8 +415,10 @@ export default function MovieManagementPage() {
                 return (titleMatch || genreMatch) && statusMatch;
             })
             .sort((a, b) => {
-                if (sortBy === 'newest') return (b.id || 0) - (a.id || 0);
-                if (sortBy === 'oldest') return (a.id || 0) - (b.id || 0);
+                const idA = a._id || a.id || 0;
+                const idB = b._id || b.id || 0;
+                if (sortBy === 'newest') return idB > idA ? 1 : -1;
+                if (sortBy === 'oldest') return idA > idB ? 1 : -1;
                 if (sortBy === 'title-asc') return a.title.localeCompare(b.title);
                 if (sortBy === 'title-desc') return b.title.localeCompare(a.title);
                 return 0;
@@ -403,7 +503,7 @@ export default function MovieManagementPage() {
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {filteredMovies.map((movie, i) => (
-                                    <tr key={movie.id || i} className="hover:bg-white/[0.02] transition-colors group">
+                                    <tr key={movie._id || movie.id || i} className="hover:bg-white/[0.02] transition-colors group">
                                         <td className="px-8 py-5">
                                             <div className="flex items-center gap-5">
                                                 <div className="w-14 h-20 bg-gradient-to-tr from-gray-800 to-gray-700 rounded-xl flex items-center justify-center overflow-hidden border border-white/5 group-hover:border-red-600/30 transition-all shadow-lg">
@@ -449,10 +549,10 @@ export default function MovieManagementPage() {
                                                 >
                                                     <Edit2 size={18} />
                                                 </button>
-                                                <button
-                                                    onClick={() => handleDelete(movie.id)}
-                                                    className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-all outline-none"
-                                                >
+                                                    <button
+                                                        onClick={() => handleDelete(movie._id || movie.id)}
+                                                        className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-all outline-none"
+                                                    >
                                                     <Trash2 size={18} />
                                                 </button>
                                             </div>

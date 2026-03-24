@@ -338,6 +338,7 @@ class SeatService {
       .populate("movie hall");
 
     if (!showtime) throw new Error("Showtime not found");
+    if (!showtime.hall) throw new Error("This showtime is not assigned to a hall yet");
 
     // 1️⃣ Lấy tất cả ghế
     const seats = await Seat.find({ hall: showtime.hall._id }).lean();

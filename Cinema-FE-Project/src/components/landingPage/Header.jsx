@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import AuthModal from "../common/Modal/AuthModal";
 import { Link, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE =
   process.env.BACKEND_URL?.replace(/\/$/, "") || "http://localhost:3000";
@@ -25,165 +26,86 @@ export default function Header() {
   const [modalPos, setModalPos] = useState({ x: 0, y: 0 });
   const [showAuth, setShowAuth] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const isLoggedIn = Boolean(user);
+  const [scrolled, setScrolled] = useState(false);
 
-  const openAuthModal = () => {
-    const rect = loginBtnRef.current?.getBoundingClientRect();
-    if (rect) {
-      setModalPos({ x: rect.left, y: rect.bottom });
-    }
-    setShowAuth(true);
-  };
-
-  // close dropdown when click outside
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setShowMenu(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // handle Profile click
   const handleProfileClick = () => {
     const token = localStorage.getItem("token");
-
     if (token) {
       try {
         const decoded = jwtDecode(token);
-
-        if (decoded.role === "admin") {
-          navigate("/admin"); // 👉 admin vào trang admin
-        } else if (decoded.role === "staff") {
-          navigate("/staff"); // 👉 staff vào dashboard
-        } else {
-          navigate("/profile"); // 👉 user thường
-        }
-
-      } catch (err) {
-        console.error("Invalid token", err);
-        navigate("/login");
-      }
-    } else {
-      navigate("/login");
-    }
-
+        if (decoded.role === "admin") navigate("/admin");
+        else if (decoded.role === "staff") navigate("/staff");
+        else navigate("/profile");
+      } catch (err) { navigate("/login"); }
+    } else navigate("/login");
     setShowMenu(false);
   };
 
   return (
-    <header className="fixed top-0 z-50 w-full glass-effect border-b border-white/10 px-6 lg:px-20 py-4 flex items-center justify-between">
-
-      {/* LEFT */}
-      <div className="flex items-center gap-12">
-        <Link to={`/`} className="flex items-center gap-3 text-primary">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
-            <span className="font-bold text-2xl">S</span>
+    <header className={`fixed top-0 z-[100] w-full transition-all duration-500 px-6 lg:px-24 py-5 flex items-center justify-between ${scrolled ? 'bg-black/80 backdrop-blur-2xl border-b border-white/5 py-4' : 'bg-transparent'}`}>
+      <div className="flex items-center gap-16">
+        <Link to={`/`} className="flex items-center gap-3 group">
+          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-600/20 group-hover:scale-110 transition-transform">
+            <span className="font-black text-3xl italic">S</span>
           </div>
-          <h2 className="text-slate-100 text-xl font-bold tracking-tight">FCINEMA</h2>
+          <h2 className="text-white text-2xl font-black tracking-tighter uppercase italic group-hover:text-primary transition-colors">FCINEMA</h2>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8">
-          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Movies</a>
-          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Venues</a>
-          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Offers</a>
-          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="/manager">Manager Portal</a>
+        <nav className="hidden lg:flex items-center gap-10">
+          {['Movies', 'Venues', 'Offers'].map(item => (
+            <Link key={item} className="text-white/60 hover:text-white transition-all text-sm font-black uppercase tracking-[0.2em]" to="/">
+              {item}
+            </Link>
+          ))}
+          {user && (user.role === "manager" || user.role === "admin" || user.role === "staff") && (
+            <Link className="bg-primary/10 text-primary border border-primary/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-colors hover:text-white" to="/manager">
+              Portal
+            </Link>
+          )}
         </nav>
       </div>
 
-      {/* RIGHT */}
-      <div className="flex items-center gap-6">
-
-        {/* search */}
-        <div className="hidden lg:flex items-center glass-effect rounded-full px-4 py-1.5 gap-2 border border-white/5">
-          <Search className="text-slate-400 w-4 h-4" />
-          <input
-            className="bg-transparent border-none focus:outline-none text-sm text-slate-100 placeholder:text-slate-500 w-48"
-            placeholder="Search movies..."
-          />
+      <div className="flex items-center gap-8">
+        <div className="hidden lg:flex items-center bg-white/5 rounded-2xl px-5 py-2.5 gap-3 border border-white/5 focus-within:border-primary/50 transition-all">
+          <Search className="text-white/20 w-4 h-4" />
+          <input className="bg-transparent border-none focus:outline-none text-xs font-bold text-white placeholder:text-white/20 w-40" placeholder="SEARCH MOVIES..." />
         </div>
 
-        {/* auth */}
         {!user ? (
-          <button
-            ref={loginBtnRef}
-            onClick={() => {
-              const rect = loginBtnRef.current.getBoundingClientRect();
-              setModalPos({
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2
-              });
-              setShowAuth(true);
-            }}
-            className="flex items-center gap-2 text-slate-300 hover:text-white text-sm font-medium"
-          >
-            <LogIn className="w-4 h-4" /> Login
+          <button ref={loginBtnRef} onClick={() => {
+            const rect = loginBtnRef.current.getBoundingClientRect();
+            setModalPos({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+            setShowAuth(true);
+          }} className="btn-primary !px-8 !py-3 !text-xs">
+            Login
           </button>
         ) : (
           <div ref={menuRef} className="relative">
-
-            {/* avatar */}
-            <button
-              onClick={() => setShowMenu((prev) => !prev)}
-              className="w-10 h-10 rounded-full overflow-hidden hover:ring-2 ring-primary transition"
-            >
-              {user?.avatar ? (
-                <img
-                  src={getAvatarUrl(user.avatar)}
-                  alt="avatar"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                    e.target.nextSibling.style.display = "flex";
-                  }}
-                />
-              ) : null}
-              <div className={`w-full h-full bg-primary flex items-center justify-center ${user?.avatar ? "hidden" : ""}`}>
-                <User className="text-white w-5 h-5" />
+            <button onClick={() => setShowMenu(!showMenu)} className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-white/10 hover:border-primary transition-all p-0.5">
+              <div className="w-full h-full bg-primary/20 flex items-center justify-center rounded-[0.8rem]">
+                {user?.avatar ? <img src={getAvatarUrl(user.avatar)} className="w-full h-full object-cover rounded-[0.8rem]" /> : <User className="text-white w-6 h-6" />}
               </div>
             </button>
-
-            {/* dropdown */}
-            {showMenu && (
-              <div className="absolute right-0 mt-3 w-44 bg-slate-800 border border-white/10 rounded-xl shadow-xl overflow-hidden animate-fadeIn">
-
-                <button
-                  onClick={handleProfileClick}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
-                >
-                  Profile
-                </button>
-
-                <button
-                  onClick={() => {
-                    logout();
-                    setShowMenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-slate-700"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
-
-              </div>
-            )}
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute right-0 mt-4 w-56 bg-neutral-900/95 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] shadow-2xl overflow-hidden p-2">
+                  <button onClick={handleProfileClick} className="w-full text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all">Profile Setup</button>
+                  <div className="h-px bg-white/5 my-1 mx-2" />
+                  <button onClick={() => { logout(); setShowMenu(false); }} className="w-full flex items-center gap-3 px-5 py-3 text-xs font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><LogOut className="w-4 h-4" /> Sign Out</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
-
-        <button className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-full text-sm font-bold transition transform hover:scale-105">
-          Book Now
-        </button>
-
       </div>
 
-      <AuthModal
-        isOpen={showAuth}
-        onClose={() => setShowAuth(false)}
-        origin={modalPos}
-      />
+      <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} origin={modalPos} />
     </header>
   );
 }

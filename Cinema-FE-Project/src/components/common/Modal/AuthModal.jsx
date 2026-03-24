@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import { login as loginApi, register } from "../../../services/authService";
 import { useAuth } from "../../../context/AuthContext";
 import NetflixInput from "../Input/NetflixInput";
@@ -30,6 +31,24 @@ export default function AuthModal({ isOpen, onClose, origin }) {
         }, 200);
     }, [navigate, pathname]);
 
+    const handleLoginRedirect = useCallback((token) => {
+        try {
+            const decoded = jwtDecode(token);
+            const role = decoded.role;
+            if (role === "manager") {
+                navigate("/manager/dashboard");
+            } else if (role === "admin") {
+                navigate("/admin/dashboard");
+            } else if (role === "staff") {
+                navigate("/staff");
+            } else {
+                focusMainContentAfterLogin();
+            }
+        } catch (e) {
+            focusMainContentAfterLogin();
+        }
+    }, [navigate, focusMainContentAfterLogin]);
+
     const onGoogleAuthSuccess = useCallback(
         (token) => {
             if (!token) return;
@@ -43,9 +62,9 @@ export default function AuthModal({ isOpen, onClose, origin }) {
                 timer: 2000,
                 showConfirmButton: false,
             });
-            focusMainContentAfterLogin();
+            handleLoginRedirect(token);
         },
-        [login, onClose, focusMainContentAfterLogin]
+        [login, onClose, handleLoginRedirect]
     );
 
     const onGoogleAuthError = useCallback(() => {
@@ -154,7 +173,6 @@ export default function AuthModal({ isOpen, onClose, origin }) {
 
                 login(token);
 
-                // ✅ THÊM ĐOẠN NÀY
                 Swal.fire({
                     icon: "success",
                     title: "Đăng nhập thành công!",
@@ -165,7 +183,7 @@ export default function AuthModal({ isOpen, onClose, origin }) {
                 });
 
                 onClose();
-                focusMainContentAfterLogin();
+                handleLoginRedirect(token);
             }
         } catch (err) {
             Swal.fire({

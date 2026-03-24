@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Swal from 'sweetalert2';
 import { Hash, Plus, X, Loader2, Trash2, Edit2, Search } from 'lucide-react';
 import { managerService } from '../../../services/managerService';
 
@@ -8,49 +9,86 @@ export default function GenreManagementPage() {
     const [loading, setLoading] = useState(true);
     const [newGenre, setNewGenre] = useState('');
 
-    const fetchGenres = async () => {
+    const fetchGenres = useCallback(async () => {
         try {
             setLoading(true);
             const response = await managerService.getGenres();
             setGenres(response.data || response);
         } catch (err) {
             console.error(err);
-            setGenres([
-                { id: 1, name: 'Action' },
-                { id: 2, name: 'Comedy' },
-                { id: 3, name: 'Horror' },
-                { id: 4, name: 'Science Fiction' },
-                { id: 5, name: 'Drama' },
-                { id: 6, name: 'Animation' },
-            ]);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchGenres();
-    }, []);
+    }, [fetchGenres]);
 
     const handleAdd = async (e) => {
         e.preventDefault();
         if (!newGenre.trim()) return;
         try {
             await managerService.createGenre({ name: newGenre });
+            Swal.fire({
+                title: 'Added!',
+                text: 'New genre created successfully.',
+                icon: 'success',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626'
+            });
             setNewGenre('');
             fetchGenres();
         } catch (err) {
             console.error(err);
+            Swal.fire({
+                title: 'Error!',
+                text: err?.response?.data?.message || 'Failed to create genre.',
+                icon: 'error',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626'
+            });
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Delete this genre?')) return;
-        try {
-            await managerService.deleteGenre(id);
-            fetchGenres();
-        } catch (err) {
-            console.error(err);
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#1a0607',
+            confirmButtonText: 'Yes, delete it!',
+            background: '#1a0607',
+            color: '#fff'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await managerService.deleteGenre(id);
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: 'Genre has been removed.',
+                    icon: 'success',
+                    background: '#1a0607',
+                    color: '#fff',
+                    confirmButtonColor: '#dc2626'
+                });
+                fetchGenres();
+            } catch (err) {
+                console.error(err);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to delete genre.',
+                    icon: 'error',
+                    background: '#1a0607',
+                    color: '#fff',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
         }
     };
 
@@ -89,7 +127,7 @@ export default function GenreManagementPage() {
                         <AnimatePresence>
                             {genres.map(genre => (
                                 <motion.div
-                                    key={genre.id}
+                                    key={genre._id || genre.id}
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.8 }}
@@ -99,7 +137,7 @@ export default function GenreManagementPage() {
                                         {typeof genre.name === 'object' ? genre.name?.name : genre.name}
                                     </span>
                                     <button
-                                        onClick={() => handleDelete(genre.id)}
+                                        onClick={() => handleDelete(genre._id || genre.id)}
                                         className="p-1 text-gray-600 hover:text-red-500 transition-colors"
                                     >
                                         <X size={14} />

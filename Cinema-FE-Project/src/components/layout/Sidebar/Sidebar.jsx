@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     Clapperboard,
@@ -12,8 +12,8 @@ import {
     MessageSquare,
     Hash,
     LogOut,
-    ChevronRight
 } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
 
 const SidebarItem = ({ to, icon: Icon, label }) => (
     <NavLink
@@ -26,7 +26,7 @@ const SidebarItem = ({ to, icon: Icon, label }) => (
     `}
     >
         <div className="flex items-center gap-4 relative z-10">
-            <div className={`p-2 rounded-xl transition-colors duration-500 ${to === window.location.pathname ? 'bg-red-600 text-white shadow-lg' : 'group-hover:bg-white/10'}`}>
+            <div className={`p-2 rounded-xl transition-colors duration-500 ${window.location.pathname === to ? 'bg-red-600 text-white shadow-lg' : 'group-hover:bg-white/10'}`}>
                 <Icon size={18} className="group-hover:scale-110 transition-transform duration-300" />
             </div>
             <span className="font-bold text-sm tracking-wide">{label}</span>
@@ -36,6 +36,9 @@ const SidebarItem = ({ to, icon: Icon, label }) => (
 );
 
 export default function Sidebar() {
+    const { logout } = useAuth();
+    const navigate = useNavigate();
+
     const menuItems = [
         { to: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { to: '/manager/movies', icon: Clapperboard, label: 'Movies' },
@@ -48,6 +51,11 @@ export default function Sidebar() {
         { to: '/manager/banners', icon: ImageIcon, label: 'Banners' },
         { to: '/manager/reviews', icon: MessageSquare, label: 'Reviews' },
     ];
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
 
     return (
         <aside className="w-72 h-screen fixed left-0 top-0 bg-[#140405]/80 backdrop-blur-xl border-r border-white/10 flex flex-col p-6 z-50">
@@ -70,7 +78,10 @@ export default function Sidebar() {
             </nav>
 
             <div className="pt-6 border-t border-white/10 mt-6">
-                <button className="flex items-center gap-4 px-4 py-3.5 w-full text-gray-500 hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all duration-300 group">
+                <button 
+                    onClick={handleLogout}
+                    className="flex items-center gap-4 px-4 py-3.5 w-full text-gray-500 hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all duration-300 group"
+                >
                     <div className="p-2 rounded-xl group-hover:bg-red-500/10 transition-colors">
                         <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
                     </div>

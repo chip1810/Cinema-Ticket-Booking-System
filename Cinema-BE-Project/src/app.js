@@ -39,13 +39,15 @@ const AuthController = require("./modules/auth/controllers/AuthController");
 const GoogleAuthController = require("./modules/auth/controllers/GoogleAuthController");
 const ProfileController = require("./modules/auth/controllers/ProfileController");
 const MovieController = require("./modules/movie/controllers/MovieController");
-const ShowtimeController = require("./controllers/ShowtimeController");
-const PricingController = require("./controllers/PricingController");
-const HallManagerController = require("./controllers/HallManagerController");
-const PricingManagerController = require("./controllers/PricingManagerController");
-const NewsController = require("./controllers/NewsController");
-const BannerController = require("./controllers/BannerController");
-const DashboardController = require("./controllers/DashboardController");
+const ShowtimeController = require("./modules/showtime/controllers/ShowtimeController");
+const PricingController = require("./modules/pricing_rule/controllers/PricingController");
+const HallManagerController = require("./modules/hall/controllers/HallManagerController");
+const PricingManagerController = require("./modules/pricing_rule/controllers/PricingManagerController");
+const NewsController = require("./modules/news/controllers/NewsController");
+const BannerController = require("./modules/banner/controllers/BannerController");
+const DashboardController = require("./modules/manager/controllers/DashboardController");
+const GenreController = require("./modules/genre/controllers/GenreController");
+const ReviewController = require("./modules/review/controllers/ReviewController");
 const staffRouter = require("./modules/staff/routes/StaffRouter");
 const seatRouter = require("./modules/seat/routes/SeatRoute");
 const adminRoutes = require("./modules/admin/routes/admin.routes");
@@ -77,7 +79,7 @@ app.use("/api/seat", seatRouter);
 app.use("/api/vouchers", voucherRoutes);
 app.use("/api/payment", paymentRoutes);
 
-// ── Serve avatar files (cả uploads/ và uploads/avatars/) ───────────────────
+// ── Serve upload files (avatars, posters, banners) ───────────────────
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // Controllers instance
@@ -93,6 +95,8 @@ const pricingManager = new PricingManagerController();
 const news = new NewsController();
 const banner = new BannerController();
 const dashboard = new DashboardController();
+const genre = new GenreController();
+const review = new ReviewController();
 
 // --- Auth ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
@@ -127,10 +131,16 @@ app.get("/api/auth/google/verify", require("./middlewares/authenticate"), (req, 
 // --- Movie ---
 app.get("/api/movies", (req, res) => movie.getAll(req, res));
 app.get("/api/movies/:id", (req, res) => movie.getById(req, res));
+app.post("/api/manager/movies/upload", (req, res) => movie.uploadPoster(req, res));
 app.post("/api/movies", (req, res) => movie.create(req, res));
 app.put("/api/movies/:id", (req, res) => movie.update(req, res));
 app.delete("/api/movies/:id", (req, res) => movie.delete(req, res));
 app.get("/api/movies/uuid/:uuid", (req, res) => movie.getByUUID(req, res));
+
+// --- Genre ---
+app.get("/api/genres", (req, res) => genre.getAll(req, res));
+app.post("/api/genres", (req, res) => genre.create(req, res));
+app.delete("/api/genres/:id", (req, res) => genre.delete(req, res));
 
 // --- Showtime ---
 app.get("/api/showtimes/:id", (req, res) => showtime.getById(req, res));
@@ -151,6 +161,7 @@ app.delete("/api/manager/news/:id", (req, res) => news.delete(req, res));
 
 // --- Banner Routes ---
 app.get("/api/banners", (req, res) => banner.getAll(req, res));
+app.post("/api/manager/banners/upload", (req, res) => banner.uploadBanner(req, res));
 app.post("/api/manager/banners", (req, res) => banner.create(req, res));
 app.put("/api/manager/banners/:id", (req, res) => banner.update(req, res));
 app.patch("/api/manager/banners/:id/toggle", (req, res) => banner.toggle(req, res));
@@ -159,18 +170,27 @@ app.delete("/api/manager/banners/:id", (req, res) => banner.delete(req, res));
 // --- Dashboard ---
 app.get("/api/manager/dashboard/summary", (req, res) => dashboard.getSummary(req, res));
 app.get("/api/manager/dashboard/movies", (req, res) => dashboard.getMovieStats(req, res));
+app.get("/api/manager/dashboard/export", (req, res) => dashboard.exportSummary(req, res));
 
 // --- Hall ---
 app.get("/api/manager/halls", (req, res) => hallManager.getAllHalls(req, res));
 app.get("/api/manager/halls/:id", (req, res) => hallManager.getHallById(req, res));
 app.post("/api/manager/halls", (req, res) => hallManager.createHall(req, res));
-app.put("/api/manager/halls/:id", (req, res) => hallManager.update(req, res));
+app.put("/api/manager/halls/:id", (req, res) => hallManager.updateHall(req, res));
 app.delete("/api/manager/halls/:id", (req, res) => hallManager.deleteHall(req, res));
+app.post("/api/manager/halls/:id/layout", (req, res) => hallManager.setSeatLayout(req, res));
+app.get("/api/manager/halls/:id/layout", (req, res) => hallManager.getSeatLayout(req, res));
 
 // --- Pricing rules ---
 app.get("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.getByShowtime(req, res));
 app.post("/api/manager/pricing", (req, res) => pricingManager.setRules(req, res));
 app.delete("/api/manager/pricing/:showtimeId", (req, res) => pricingManager.deleteByShowtime(req, res));
+
+// --- Review Moderation ---
+app.get("/api/reviews", (req, res) => review.getAll(req, res));
+app.get("/api/movies/:movieId/reviews", (req, res) => review.getByMovie(req, res));
+app.patch("/api/reviews/:id/moderate", (req, res) => review.moderate(req, res));
+app.delete("/api/reviews/:id", (req, res) => review.delete(req, res));
 
 // --- Seed Route (Dev only) ---
 app.post("/api/seed", async (_req, res) => {
@@ -207,4 +227,4 @@ app.get("/", (_req, res) =>
   res.json({ status: "ok", message: "Cinema API running" })
 );
 
-module.exports = { app };
+module.exports = app;

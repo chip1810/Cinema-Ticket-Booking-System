@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { seatService } from "../services/seatService";
 import useSeatSocket from "../hooks/useSeatSocket";
 import Swal from "sweetalert2";
+import { motion } from "framer-motion";
+import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+
 export default function SeatSelection({ socket, onNext, savedSeats }) {
     const { uuid } = useParams();
+    const [scale, setScale] = useState(1);
     const [seatData, setSeatData] = useState({
         movie: null,
         showtime: null,
@@ -13,6 +17,28 @@ export default function SeatSelection({ socket, onNext, savedSeats }) {
         pricing: {}
     });
     const [selectedSeats, setSelectedSeats] = useState([]);
+
+    const gridRef = useRef(null);
+
+    useEffect(() => {
+        const gridEl = gridRef.current;
+        if (!gridEl) return;
+
+        const handleWheelNative = (e) => {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                setScale(prev => Math.min(Math.max(0.3, prev + delta), 2.5));
+            }
+        };
+
+        gridEl.addEventListener('wheel', handleWheelNative, { passive: false });
+        return () => gridEl.removeEventListener('wheel', handleWheelNative);
+    }, []);
+
+    const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 2.5));
+    const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.3));
+    const resetZoom = () => setScale(1);
 
     useSeatSocket(socket, setSeatData, setSelectedSeats);
 
@@ -160,10 +186,28 @@ export default function SeatSelection({ socket, onNext, savedSeats }) {
                     <p className="mt-6 text-white-800 text-[10px] tracking-[2em] uppercase font-black ml-[2em]">Màn Hình</p>
                 </div>
 
-                {/* SEAT GRID */}
-                <div className="w-full overflow-x-auto no-scrollbar pb-16 touch-pan-x cursor-grab active:cursor-grabbing">
-                    {/* Thêm w-max để ép container phải rộng theo nội dung hàng ghế */}
-                    <div className="w-max mx-auto flex flex-col gap-5 md:gap-7 px-10">
+                {/* SEAT GRID CONTAINER */}
+                <div
+                    ref={gridRef}
+                    className="w-full h-[600px] bg-black/20 rounded-[3rem] border border-white/5 overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex items-center justify-center"
+                >
+                    {/* Zoom Controls */}
+                    <div className="absolute right-8 top-8 z-30 flex flex-col gap-2 bg-[#111]/90 backdrop-blur-2xl p-2.5 rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                        <button onClick={zoomIn} title="Phóng to" className="p-3 hover:bg-white/10 rounded-xl transition-colors text-white border border-white/5"><ZoomIn size={22}/></button>
+                        <button onClick={zoomOut} title="Thu nhỏ" className="p-3 hover:bg-white/10 rounded-xl transition-colors text-white border border-white/5"><ZoomOut size={22}/></button>
+                        <button onClick={resetZoom} title="Mặc định" className="p-3 hover:bg-white/10 rounded-xl transition-colors text-white border border-white/5"><RotateCcw size={22}/></button>
+                    </div>
+
+                    <motion.div
+                        drag
+                        dragConstraints={gridRef}
+                        dragElastic={0.1}
+                        dragMomentum={true}
+                        animate={{ scale }}
+                        initial={{ scale: 0.8 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="p-10 flex flex-col gap-5 md:gap-7 origin-center cursor-grab active:cursor-grabbing"
+                    >
                         {Object.entries(groupedSeats).map(([rowLabel, rowSeats]) => (
                             <div key={rowLabel} className="flex items-center justify-center gap-4 md:gap-8">
                                 <div className="w-4 text-white-700 font-black text-xs">{rowLabel}</div>
@@ -171,9 +215,8 @@ export default function SeatSelection({ socket, onNext, savedSeats }) {
                                     {rowSeats.map((seat) => {
                                         const isSelected = selectedSeats.includes(seat.UUID);
                                         const isSold = seat.status === "sold";
-                                        const isHeld = seat.status === "held" || seat.status === "pending"; // Thêm dòng này để check các trạng thái đang bị giữ
-                                        const isCouple = seat.type === "COUPLE";
                                         const isLockedByOthers = ["held", "pending", "booked", "sold"].includes(seat.status);
+                                        const isCouple = seat.type === "COUPLE";
 
                                         return (
                                             <button
@@ -219,7 +262,7 @@ export default function SeatSelection({ socket, onNext, savedSeats }) {
                                 <div className="w-4 text-white-700 font-black text-xs text-right">{rowLabel}</div>
                             </div>
                         ))}
-                    </div>
+                    </motion.div>
                 </div>
 
                 {/* LEGEND - GIỜ LÀ 1 PHẦN CỦA FLOW TRANG */}

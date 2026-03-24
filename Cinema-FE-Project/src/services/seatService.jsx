@@ -7,7 +7,7 @@ export const seatService = {
   async getSeatsByShowtime(uuid) {
 
     const res = await fetch(
-      `${BASE_URL}/api/seat/showtimes/showtimeUuid/${uuid}/seats`
+      `${BASE_URL}/seat/showtimes/showtimeUuid/${uuid}/seats`
     );
 
     if (!res.ok) {
@@ -23,7 +23,7 @@ export const seatService = {
 
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`${BASE_URL}/api/seat/hold`, {
+    const res = await fetch(`${BASE_URL}/seat/hold`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,86 +1,145 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Swal from 'sweetalert2';
 import {
     Armchair,
     Plus,
-    MoreVertical,
     Loader2,
     Grid3X3,
-    ChevronRight,
+    X,
+    Layout,
     Save,
     Trash2,
-    Type,
-    Maximize,
-    X,
-    Edit2
+    Edit2,
+    Search,
+    Monitor,
+    RotateCcw
 } from 'lucide-react';
 import { managerService } from '../../../services/managerService';
 
-const SeatEditor = ({ hall, onClose }) => {
+const SeatLayoutModal = ({ isOpen, onClose, hall }) => {
     const [rows, setRows] = useState(10);
     const [cols, setCols] = useState(12);
-    const [grid, setGrid] = useState({}); // { "r-c": type }
+    const [grid, setGrid] = useState({});
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
     const [selectedType, setSelectedType] = useState('NORMAL');
+    const [saving, setSaving] = useState(false);
+    const [scale, setScale] = useState(0.8);
+    const gridRef = useRef(null);
+
+    const [rowMode, setRowMode] = useState(false);
 
     useEffect(() => {
         const fetchLayout = async () => {
+            if (!hall) return;
             try {
                 setLoading(true);
-                const res = await managerService.getSeatLayout(hall.id);
-                // Transform matrix to grid object
-                const newGrid = {};
-                let maxR = 10;
-                let maxC = 12;
+                const hallID = hall?._id || hall?.id;
+                const response = await managerService.getSeatLayout(hallID);
+                console.log("Layout API Data for Hall:", hallID, response);
 
-                if (res.data?.matrix) {
-                    res.data.matrix.forEach(rowItem => {
-                        maxR = Math.max(maxR, rowItem.row);
-                        rowItem.seats.forEach(seat => {
-                            maxC = Math.max(maxC, seat.col);
-                            newGrid[`${rowItem.row}-${seat.col}`] = seat.type;
-                        });
+                const dataWrap = response.data || response;
+                const actualSeatsArr = dataWrap.seats || (dataWrap.data && dataWrap.data.seats) || [];
+
+                if (Array.isArray(actualSeatsArr) && actualSeatsArr.length > 0) {
+                    const newGrid = {};
+                    let maxR = 0;
+                    let maxC = 0;
+                    
+                    actualSeatsArr.forEach(s => {
+                        const r = parseInt(s.row, 10);
+                        const c = parseInt(s.col, 10);
+                        if (!isNaN(r) && !isNaN(c)) {
+                            const key = `${r}-${c}`;
+                            newGrid[key] = s.type || 'NORMAL';
+                            if (r > maxR) maxR = r;
+                            if (c > maxC) maxC = c;
+                        }
                     });
+
+                    setGrid(newGrid);
+                    if (maxR > 0) setRows(maxR);
+                    if (maxC > 0) setCols(maxC);
+                    console.log(`Grid Filled: ${Object.keys(newGrid).length} seats loaded.`);
+                } else {
+                    console.log("No seats to fill. Starting with empty grid.");
+                    setGrid({});
                 }
-                setGrid(newGrid);
-                setRows(maxR);
-                setCols(maxC);
             } catch (err) {
-                console.error('Failed to fetch layout:', err);
+                console.error("fetchLayout failure:", err);
+                setGrid({});
             } finally {
                 setLoading(false);
             }
         };
-        fetchLayout();
-    }, [hall.id]);
+        if (isOpen) fetchLayout();
+    }, [isOpen, hall]);
+
+    if (!isOpen || !hall) return null;
 
     const toggleSeat = (r, c) => {
+        if (rowMode) {
+            toggleRow(r);
+            return;
+        }
         const key = `${r}-${c}`;
-        const currentType = grid[key];
-
         const newGrid = { ...grid };
-        if (currentType === selectedType) {
-            delete newGrid[key]; // Remove seat
+        if (newGrid[key]) {
+            delete newGrid[key];
         } else {
-            newGrid[key] = selectedType; // Set/Change type
+            newGrid[key] = selectedType;
         }
         setGrid(newGrid);
     };
 
+    const toggleRow = (r) => {
+        const newGrid = { ...grid };
+        // Precision match: row must match exactly followed by hyphen
+        const rowKeys = Object.keys(newGrid).filter(k => k.split('-')[0] === String(r));
+        
+        // If row has any seats, clear it. If empty, fill it.
+        if (rowKeys.length > 0) {
+            for (let c = 1; c <= cols; c++) {
+                delete newGrid[`${r}-${c}`];
+            }
+        } else {
+            for (let c = 1; c <= cols; c++) {
+                newGrid[`${r}-${c}`] = selectedType;
+            }
+        }
+        setGrid(newGrid);
+    };
+
+    const zoomIn = () => setScale(prev => Math.min(prev + 0.1, 2));
+    const zoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.3));
+    const resetZoom = () => setScale(0.8);
+
     const handleSave = async () => {
+        setSaving(true);
         try {
-            setSaving(true);
             const seats = Object.entries(grid).map(([key, type]) => {
                 const [r, c] = key.split('-').map(Number);
                 return { row: r, col: c, type };
             });
-
-            await managerService.setSeatLayout(hall.id, { seats });
+            await managerService.setSeatLayout(hall._id || hall.id, { seats });
+            Swal.fire({
+                title: 'Thành công!',
+                text: 'Đã cập nhật sơ đồ ghế.',
+                icon: 'success',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626'
+            });
             onClose();
         } catch (err) {
-            console.error('Failed to save layout:', err);
-            alert('Lỗi khi lưu sơ đồ ghế');
+            Swal.fire({
+                title: 'Lỗi!',
+                text: 'Không thể lưu sơ đồ ghế.',
+                icon: 'error',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626'
+            });
         } finally {
             setSaving(false);
         }
@@ -104,67 +163,94 @@ const SeatEditor = ({ hall, onClose }) => {
         >
             <div className="p-8 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
                 <div>
-                    <h3 className="text-2xl font-bold">
+                    <h3 className="text-2xl font-bold text-white">
                         {hall.name} - Sơ đồ ghế
                     </h3>
                     <div className="flex items-center gap-4 mt-1">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">Hàng:</span>
-                            <input type="number" value={rows} onChange={e => setRows(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 bg-white/5 border border-white/10 rounded px-1 text-xs text-white" />
+                            <span className="text-xs text-gray-500 font-bold uppercase">Hàng:</span>
+                            <input type="number" value={rows} onChange={e => setRows(Math.max(1, parseInt(e.target.value) || 1))} className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:border-red-600 outline-none" />
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">Cột:</span>
-                            <input type="number" value={cols} onChange={e => setCols(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 bg-white/5 border border-white/10 rounded px-1 text-xs text-white" />
+                            <span className="text-xs text-gray-500 font-bold uppercase">Cột:</span>
+                            <input type="number" value={cols} onChange={e => setCols(Math.max(1, parseInt(e.target.value) || 1))} className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:border-red-600 outline-none" />
                         </div>
                     </div>
                 </div>
-                <button onClick={onClose} className="p-3 hover:bg-white/10 rounded-full transition-colors">
+                <button onClick={onClose} className="p-3 hover:bg-white/10 rounded-full transition-colors text-white">
                     <X size={24} />
                 </button>
             </div>
 
-            <div className="flex-1 overflow-auto p-12 custom-scrollbar flex flex-col items-center">
+            <div className="flex-1 overflow-hidden relative bg-[#050505] custom-scrollbar border-y border-white/5">
                 {loading ? (
                     <div className="h-full flex items-center justify-center">
                         <Loader2 className="animate-spin text-red-600" size={40} />
                     </div>
                 ) : (
-                    <>
-                        <div className="w-full max-w-2xl h-8 bg-gradient-to-b from-white/20 to-transparent rounded-lg mb-20 relative">
-                            <p className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] uppercase font-black tracking-[0.5em] text-gray-500">Màn Hình</p>
+                    <div ref={gridRef} className="w-full h-full relative cursor-grab active:cursor-grabbing flex items-center justify-center overflow-hidden">
+                        {/* Modal Zoom Controls */}
+                        <div className="absolute right-8 top-8 z-[80] flex flex-col gap-2 bg-[#1a0607]/90 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-2xl">
+                            <button onClick={zoomIn} title="Phóng to" className="p-2.5 hover:bg-white/10 rounded-xl transition-colors text-white border border-white/5"><Plus size={18}/></button>
+                            <button onClick={zoomOut} title="Thu nhỏ" className="p-2.5 hover:bg-white/10 rounded-xl transition-colors text-white border border-white/5"><X size={18}/></button>
+                            <button onClick={resetZoom} title="Mặc định" className="p-2.5 hover:bg-white/10 rounded-xl transition-colors text-white border border-white/5"><RotateCcw size={18}/></button>
                         </div>
 
-                        <div className="flex flex-col gap-3 min-w-max pb-10">
-                            {Array.from({ length: rows }).map((_, r) => (
-                                <div key={r} className="flex gap-3 items-center">
-                                    <span className="w-6 text-xs font-bold text-gray-600 uppercase">{String.fromCharCode(65 + r)}</span>
-                                    <div className="flex gap-2">
-                                        {Array.from({ length: cols }).map((_, c) => {
-                                            const rowNum = r + 1;
-                                            const colNum = c + 1;
-                                            const type = grid[`${rowNum}-${colNum}`];
-                                            return (
-                                                <button
-                                                    key={c}
-                                                    onClick={() => toggleSeat(rowNum, colNum)}
-                                                    className={`w-8 h-8 rounded-lg border transition-all duration-200 flex items-center justify-center group ${getSeatColor(type)}`}
-                                                >
-                                                    <Armchair size={14} className="group-hover:scale-110 transition-transform" />
-                                                </button>
-                                            );
-                                        })}
+                        <motion.div 
+                            drag
+                            dragConstraints={gridRef}
+                            animate={{ scale }}
+                            initial={{ scale: 0.8 }}
+                            className="p-32 flex flex-col items-center origin-center"
+                        >
+                            <div className="w-full max-w-2xl h-8 bg-gradient-to-b from-red-600/20 to-transparent rounded-lg mb-20 relative flex items-center justify-center border-t border-red-600/30">
+                                <p className="text-[10px] uppercase font-black tracking-[1em] text-red-500 flex items-center gap-2"><Monitor size={12}/> Màn Hình</p>
+                            </div>
+
+                            <div className="flex flex-col gap-3 min-w-max pb-10">
+                                {Array.from({ length: rows }).map((_, r) => {
+                                    const rowLabel = String.fromCharCode(65 + r);
+                                    return (
+                                    <div key={r} className="flex gap-4 items-center group/row">
+                                        <button 
+                                            type="button"
+                                            onClick={() => toggleRow(r + 1)}
+                                            title={`Chọn cả hàng ${rowLabel}`}
+                                            className="w-10 h-10 flex items-center justify-center text-xs font-black text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all uppercase"
+                                        >
+                                            {rowLabel}
+                                        </button>
+                                        <div className="flex gap-2">
+                                            {Array.from({ length: cols }).map((_, c) => {
+                                                const rowNum = r + 1;
+                                                const colNum = c + 1;
+                                                const type = grid[`${rowNum}-${colNum}`];
+                                                return (
+                                                    <button
+                                                        key={c}
+                                                        type="button"
+                                                        onClick={() => toggleSeat(rowNum, colNum)}
+                                                        className={`w-9 h-9 rounded-xl border transition-all duration-200 flex items-center justify-center group ${getSeatColor(type)} hover:scale-110 active:scale-90 ${rowMode ? 'hover:bg-red-500/20' : ''}`}
+                                                        title={`${rowLabel}${colNum}${rowMode ? ' (Click to toggle row)' : ''}`}
+                                                    >
+                                                        <Armchair size={14} className="group-hover:rotate-12 transition-transform" />
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <span className="w-10 text-xs font-black text-gray-600 uppercase text-center opacity-40">{rowLabel}</span>
                                     </div>
-                                    <span className="w-6 text-xs font-bold text-gray-600 uppercase text-right">{String.fromCharCode(65 + r)}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </div>
 
             <div className="p-8 bg-white/[0.02] border-t border-white/10 shrink-0">
                 <div className="flex justify-between items-center mb-8">
-                    <div className="flex gap-6">
+                    <div className="flex gap-4">
                         {[
                             { id: 'NORMAL', label: 'Thường', color: 'bg-white/10', border: 'border-white/20' },
                             { id: 'VIP', label: 'VIP', color: 'bg-amber-500', border: 'border-amber-400' },
@@ -173,28 +259,37 @@ const SeatEditor = ({ hall, onClose }) => {
                             <button
                                 key={t.id}
                                 onClick={() => setSelectedType(t.id)}
-                                className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all ${selectedType === t.id ? 'bg-white/10 border-red-600' : 'bg-transparent border-transparent'}`}
+                                className={`flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all ${selectedType === t.id ? 'bg-red-600/10 border-red-600 text-white' : 'bg-transparent border-white/5 text-gray-500 hover:bg-white/5'}`}
                             >
-                                <div className={`w-4 h-4 rounded ${t.color} ${t.border} border`} />
-                                <span className="text-xs font-bold text-gray-300">{t.label}</span>
+                                <div className={`w-4 h-4 rounded-lg ${t.color} ${t.border} border shadow-inner`} />
+                                <span className="text-xs font-black uppercase tracking-widest">{t.label}</span>
                             </button>
                         ))}
+                    </div>
+                    <div className="text-xs text-gray-400 font-bold flex items-center gap-6">
+                        <button 
+                            onClick={() => setRowMode(!rowMode)}
+                            className={`flex items-center gap-2 px-4 py-2 border rounded-xl transition-all ${rowMode ? 'bg-red-600 border-red-500 text-white' : 'bg-white/5 border-white/10 text-gray-500'}`}
+                        >
+                            <Layout size={14} /> Chế độ chọn cả hàng: {rowMode ? 'BẬT' : 'TẮT'}
+                        </button>
+                        <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-600 anim-pulse"/> {rowMode ? 'Click bất kỳ ghế nào để chọn cả hàng' : 'Click từng ghế để chọn'}</span>
                     </div>
                 </div>
                 <div className="flex gap-4">
                     <button
                         onClick={() => setGrid({})}
-                        className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-gray-400"
+                        className="flex-1 py-5 bg-white/5 hover:bg-red-500/10 hover:text-red-500 rounded-3xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 text-gray-500 border border-white/5"
                     >
-                        <Trash2 size={20} /> Xóa hết
+                        <Trash2 size={20} /> Xóa sơ đồ
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex-[2] py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="flex-[2] py-5 bg-red-600 hover:bg-red-700 text-white rounded-3xl font-black uppercase tracking-[0.2em] shadow-xl shadow-red-600/20 transition-all flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
                     >
                         {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                        Lưu sơ đồ ({Object.keys(grid).length} ghế)
+                        Lưu ({Object.keys(grid).length} ghế)
                     </button>
                 </div>
             </div>
@@ -203,13 +298,28 @@ const SeatEditor = ({ hall, onClose }) => {
 };
 
 const HallModal = ({ isOpen, onClose, hall = null, onSave }) => {
-    const [formData, setFormData] = useState(hall || {
+    const [formData, setFormData] = useState({
         name: '',
         type: 'Standard',
         capacity: 100
     });
 
+    useEffect(() => {
+        if (hall) {
+            setFormData({
+                name: hall.name || '',
+                type: hall.type || 'Standard',
+                capacity: hall.capacity || 100
+            });
+        }
+    }, [hall]);
+
     if (!isOpen) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(formData);
+    };
 
     return (
         <motion.div
@@ -224,16 +334,13 @@ const HallModal = ({ isOpen, onClose, hall = null, onSave }) => {
                 className="bg-[#1a0607] border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
             >
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
-                    <h3 className="text-xl font-bold">{hall ? 'Edit Hall' : 'Add New Hall'}</h3>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <h3 className="text-xl font-bold text-white">{hall ? 'Edit Hall' : 'Add New Hall'}</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
                         <X size={20} />
                     </button>
                 </div>
 
-                <form className="p-8 space-y-6" onSubmit={(e) => {
-                    e.preventDefault();
-                    onSave(formData);
-                }}>
+                <form className="p-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="space-y-2">
                         <label className="text-sm text-gray-400 font-medium">Hall Name</label>
                         <input
@@ -274,13 +381,13 @@ const HallModal = ({ isOpen, onClose, hall = null, onSave }) => {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-2xl font-bold transition-all text-white"
+                            className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-2xl font-bold transition-all text-white active:scale-95"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold shadow-lg shadow-red-600/20 transition-all"
+                            className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold shadow-lg shadow-red-600/20 transition-all active:scale-95"
                         >
                             {hall ? 'Save Changes' : 'Create Hall'}
                         </button>
@@ -291,98 +398,31 @@ const HallModal = ({ isOpen, onClose, hall = null, onSave }) => {
     );
 };
 
-const HallCard = ({ hall, onEditLayout, onEdit, onDelete }) => (
-    <motion.div
-        whileHover={{ y: -5 }}
-        className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all group overflow-hidden relative"
-    >
-        <div className="absolute top-0 right-0 w-24 h-24 bg-red-600/5 rounded-full -mr-12 -mt-12 group-hover:scale-125 transition-transform duration-500" />
-
-        <div className="flex justify-between items-start mb-6 relative z-10">
-            <div className="w-12 h-12 bg-red-600/10 rounded-2xl flex items-center justify-center text-red-500 shadow-inner">
-                <Armchair size={24} />
-            </div>
-            <div className="flex gap-1">
-                <button
-                    onClick={() => onEdit(hall)}
-                    className="p-2 text-gray-500 hover:text-white rounded-lg hover:bg-white/5 transition-all outline-none"
-                    title="Edit Hall"
-                >
-                    <Edit2 size={16} />
-                </button>
-                <button
-                    onClick={() => onDelete(hall.id)}
-                    className="p-2 text-gray-500 hover:text-red-500 rounded-lg hover:bg-red-500/10 transition-all outline-none"
-                    title="Delete Hall"
-                >
-                    <Trash2 size={16} />
-                </button>
-            </div>
-        </div>
-
-        <h3 className="text-2xl font-black mb-1 font-display tracking-tight text-white">
-            {typeof hall.name === 'object' ? hall.name?.name : hall.name}
-        </h3>
-        <p className="text-gray-500 text-sm mb-6 flex items-center gap-2">
-            <Type size={14} /> {hall.type}
-        </p>
-
-        <div className="space-y-4 relative z-10">
-            <div className="flex justify-between items-end bg-white/5 p-4 rounded-2xl border border-white/5">
-                <div>
-                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Max Capacity</p>
-                    <p className="text-2xl font-black text-white">{hall.capacity} <span className="text-xs font-medium text-gray-500 ml-1">Seats</span></p>
-                </div>
-                <div className="text-right">
-                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Layout</p>
-                    <div className="flex gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-700" />
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div className="mt-8 pt-4 border-t border-white/5 flex gap-2 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-            <button
-                onClick={() => onEditLayout(hall)}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl text-xs font-bold transition-all border border-red-600/20"
-            >
-                <Grid3X3 size={14} /> Edit Seats
-            </button>
-        </div>
-    </motion.div>
-);
-
 export default function HallManagementPage() {
     const [halls, setHalls] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeLayoutHall, setActiveLayoutHall] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLayoutOpen, setIsLayoutOpen] = useState(false);
     const [editingHall, setEditingHall] = useState(null);
+    const [selectedHall, setSelectedHall] = useState(null);
 
-    const fetchHalls = async () => {
+    const fetchHalls = useCallback(async () => {
         try {
             setLoading(true);
             const response = await managerService.getHalls();
             setHalls(response.data || response);
         } catch (err) {
             console.error(err);
-            setHalls([
-                { id: 1, name: 'Cinema 01', type: 'IMAX Laser', capacity: 350, status: 'Available' },
-                { id: 2, name: 'Cinema 02', type: 'Dolby Cinema', capacity: 200, status: 'Maintenance' },
-                { id: 3, name: 'Cinema 03', type: 'VIP Gold Class', capacity: 48, status: 'Available' },
-                { id: 4, name: 'Cinema 04', type: 'Standard 4K', capacity: 150, status: 'Available' },
-            ]);
+            setHalls([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchHalls();
-    }, []);
+    }, [fetchHalls]);
 
     const handleCreate = () => {
         setEditingHall(null);
@@ -395,99 +435,171 @@ export default function HallManagementPage() {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this hall?')) return;
-        try {
-            await managerService.deleteHall(id);
-            fetchHalls();
-        } catch (err) {
-            console.error(err);
+        const result = await Swal.fire({
+            title: 'Xóa phòng chiếu?',
+            text: "Toàn bộ sơ đồ ghế sẽ bị mất.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#1a0607',
+            confirmButtonText: 'Xác nhận xóa!',
+            background: '#1a0607',
+            color: '#fff'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await managerService.deleteHall(id);
+                Swal.fire({
+                    title: 'Đã xóa!',
+                    text: 'Phòng chiếu đã được loại bỏ.',
+                    icon: 'success',
+                    background: '#1a0607',
+                    color: '#fff',
+                    confirmButtonColor: '#dc2626'
+                });
+                fetchHalls();
+            } catch (err) {
+                console.error(err);
+                Swal.fire({
+                    title: 'Lỗi!',
+                    text: 'Không thể xóa phòng chiếu.',
+                    icon: 'error',
+                    background: '#1a0607',
+                    color: '#fff',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
         }
     };
 
     const handleSave = async (data) => {
         try {
             if (editingHall) {
-                await managerService.updateHall(editingHall.id, data);
+                await managerService.updateHall(editingHall._id || editingHall.id, data);
             } else {
                 await managerService.createHall(data);
             }
             setIsModalOpen(false);
             fetchHalls();
+            Swal.fire({
+                title: 'Thành công!',
+                text: 'Thông tin phòng chiếu đã được cập nhật.',
+                icon: 'success',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626'
+            });
         } catch (err) {
             console.error(err);
+            Swal.fire({
+                title: 'Lỗi!',
+                text: 'Có lỗi xảy ra khi lưu.',
+                icon: 'error',
+                background: '#1a0607',
+                color: '#fff',
+                confirmButtonColor: '#dc2626'
+            });
         }
     };
 
+    const filteredHalls = Array.isArray(halls) ? halls.filter(h =>
+        h.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        h.type.toLowerCase().includes(searchTerm.toLowerCase())
+    ) : [];
+
     return (
-        <div className="space-y-8 pb-10 overflow-x-hidden">
+        <div className="space-y-8 pb-10 text-white">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-3xl font-bold text-white">Hall Management</h2>
-                    <p className="text-gray-400 mt-1">Manage physical cinema rooms and configure interactive seat layouts.</p>
+                    <h2 className="text-3xl font-extrabold tracking-tight">Cấu hình Phòng chiếu</h2>
+                    <p className="text-gray-400 mt-1">Quản lý không gian, sơ đồ ghế và loại phòng chiếu.</p>
                 </div>
                 <button
                     onClick={handleCreate}
-                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-red-600/20 active:scale-95 group"
+                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg shadow-red-600/20 active:scale-95 group"
                 >
                     <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-                    <span>Create New Hall</span>
+                    <span>Thêm Phòng mới</span>
                 </button>
             </div>
 
-            {loading ? (
-                <div className="h-64 flex items-center justify-center">
-                    <Loader2 className="animate-spin text-red-600" size={40} />
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {halls.map((hall) => (
-                        <HallCard
-                            key={hall.id}
-                            hall={hall}
-                            onEditLayout={setActiveLayoutHall}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                        />
-                    ))}
+            <div className="relative">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+                <input
+                    type="text"
+                    placeholder="Tìm kiếm theo tên hoặc loại phòng..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-3xl py-4 pl-14 pr-6 focus:outline-none focus:border-red-600/50 transition-all font-medium text-lg"
+                />
+            </div>
 
-                    <motion.button
-                        onClick={handleCreate}
-                        whileHover={{ y: -5 }}
-                        className="border-2 border-dashed border-white/10 rounded-3xl p-6 hover:border-red-600/30 hover:bg-red-600/5 transition-all flex flex-col items-center justify-center gap-4 text-gray-500 hover:text-red-500 group"
-                    >
-                        <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-700 flex items-center justify-center group-hover:border-red-600/50 group-hover:scale-110 transition-all duration-500">
-                            <Plus size={32} />
-                        </div>
-                        <span className="font-bold">Add Another Terminal</span>
-                    </motion.button>
-                </div>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <AnimatePresence>
+                    {loading ? (
+                        Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="h-64 bg-white/5 border border-white/10 rounded-3xl animate-pulse" />
+                        ))
+                    ) : filteredHalls.map((hall) => (
+                        <motion.div
+                            key={hall._id || hall.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-[#1a0607] border border-white/10 rounded-[2rem] p-8 hover:border-red-600/30 transition-all group relative overflow-hidden flex flex-col justify-between"
+                        >
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <Grid3X3 size={100} />
+                            </div>
+
+                            <div className="relative">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="p-4 bg-red-600/10 rounded-2xl text-red-600">
+                                        <Layout size={28} />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleEdit(hall)} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"><Edit2 size={16} /></button>
+                                        <button onClick={() => handleDelete(hall._id || hall.id)} className="p-3 bg-white/5 hover:bg-red-600/10 text-gray-400 hover:text-red-500 rounded-xl transition-colors"><Trash2 size={16} /></button>
+                                    </div>
+                                </div>
+
+                                <h3 className="text-2xl font-black mb-2 uppercase tracking-wide group-hover:text-red-500 transition-colors">{hall.name}</h3>
+                                <div className="flex gap-3 mb-8">
+                                    <span className="px-3 py-1 bg-red-600 text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-red-600/20">{hall.type}</span>
+                                    <span className="px-3 py-1 bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-lg text-gray-400 border border-white/5">{hall.capacity} Ghế</span>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    setSelectedHall(hall);
+                                    setIsLayoutOpen(true);
+                                }}
+                                className="w-full py-4 bg-white/5 hover:bg-red-600 text-white rounded-2xl font-bold transition-all border border-white/10 hover:border-red-600 flex items-center justify-center gap-2 group/btn active:scale-95"
+                            >
+                                <Armchair size={18} className="group-hover/btn:rotate-12 transition-transform" />
+                                <span>Chỉnh sửa sơ đồ ghế</span>
+                            </button>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
 
             <AnimatePresence>
-                {activeLayoutHall && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setActiveLayoutHall(null)}
-                            className="fixed inset-0 bg-[#0a0203]/80 backdrop-blur-md z-[65]"
-                        />
-                        <SeatEditor
-                            hall={activeLayoutHall}
-                            onClose={() => {
-                                setActiveLayoutHall(null);
-                                fetchHalls(); // Refresh to see updated capacity/layout
-                            }}
-                        />
-                    </>
-                )}
                 {isModalOpen && (
                     <HallModal
                         isOpen={isModalOpen}
                         onClose={() => setIsModalOpen(false)}
                         hall={editingHall}
                         onSave={handleSave}
+                    />
+                )}
+                {isLayoutOpen && (
+                    <SeatLayoutModal
+                        key={selectedHall?._id || selectedHall?.id || 'new-layout'}
+                        isOpen={isLayoutOpen}
+                        onClose={() => setIsLayoutOpen(false)}
+                        hall={selectedHall}
                     />
                 )}
             </AnimatePresence>

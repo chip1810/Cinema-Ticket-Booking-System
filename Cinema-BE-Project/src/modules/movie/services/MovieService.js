@@ -59,9 +59,13 @@ class MovieService {
     return movie;
   }
 
-  async getMovieByUUID(uuid) {
-    const movie = await Movie.findOne({ UUID: uuid })
-      .populate("genres");
+  async getMovieByUUID(id) {
+    const movie = await Movie.findOne({
+      $or: [
+        { UUID: id },
+        ...(isObjectId(id) ? [{ _id: id }] : []),
+      ],
+    }).populate("genres");
 
     if (!movie) throw new Error("Movie not found");
 
@@ -71,7 +75,7 @@ class MovieService {
 
     const showtimeStats = await Promise.all(
       showtimes.map(async (s) => {
-        const totalSeats = await Seat.countDocuments({ hall: s.hall._id });
+        const totalSeats = s.hall ? await Seat.countDocuments({ hall: s.hall._id }) : 0;
         const soldSeats = await Ticket.countDocuments({ showtime: s._id });
         const holdingSeats = await SeatHold.countDocuments({
           showtime: s._id,
@@ -85,8 +89,8 @@ class MovieService {
           startTime: s.startTime,
           endTime: s.endTime,
           hall: {
-            name: s.hall?.name,
-            capacity: s.hall?.capacity,
+            name: s.hall?.name || 'Unknown Hall',
+            capacity: s.hall?.capacity || 0,
           },
           totalSeats,
           availableSeats,

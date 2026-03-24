@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 import { 
@@ -26,26 +26,28 @@ export default function PricingManagementPage() {
     const [saving, setSaving] = useState(false);
     const [loadingRules, setLoadingRules] = useState(false);
 
-    useEffect(() => {
-        const fetchShowtimes = async () => {
-            try {
-                const res = await managerService.getShowtimes();
-                setShowtimes(res.data || res);
-            } catch (err) {
-                console.error("Failed to fetch showtimes", err);
-            } finally {
-                setLoadingShowtimes(false);
-            }
-        };
-        fetchShowtimes();
+    const fetchShowtimes = useCallback(async () => {
+        try {
+            setLoadingShowtimes(true);
+            const res = await managerService.getShowtimes();
+            setShowtimes(res.data || res);
+        } catch (err) {
+            console.error("Failed to fetch showtimes", err);
+        } finally {
+            setLoadingShowtimes(false);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchShowtimes();
+    }, [fetchShowtimes]);
 
     const handleSelectShowtime = async (st) => {
         setSelectedShowtime(st);
         setPricingRules({ NORMAL: '', VIP: '', COUPLE: '' });
         setLoadingRules(true);
         try {
-            const res = await managerService.getPricingRules(st.id);
+            const res = await managerService.getPricingRules(st.UUID || st._id || st.id);
             const rules = res.data || res;
             if (Array.isArray(rules)) {
                 const temp = { NORMAL: '', VIP: '', COUPLE: '' };
@@ -62,11 +64,9 @@ export default function PricingManagementPage() {
     };
 
     const handleSave = async () => {
-        if (!selectedShowtime || !selectedShowtime.id) return;
-        setSaving(true);
         try {
             const payload = {
-                showtimeId: selectedShowtime.id,
+                showtimeId: selectedShowtime.UUID || selectedShowtime._id || selectedShowtime.id,
                 rules: [
                     { seatType: 'NORMAL', price: Number(pricingRules.NORMAL || 0) },
                     { seatType: 'VIP', price: Number(pricingRules.VIP || 0) },
@@ -126,9 +126,9 @@ export default function PricingManagementPage() {
                         ) : (
                             showtimes.map(st => (
                                 <div 
-                                    key={st.id}
+                                    key={st.UUID || st._id || st.id}
                                     onClick={() => handleSelectShowtime(st)}
-                                    className={`p-4 rounded-2xl cursor-pointer border transition-all ${selectedShowtime?.id === st.id ? 'bg-red-600/10 border-red-600 shadow-md' : 'bg-[#140405] border-white/5 hover:border-white/20'}`}
+                                    className={`p-4 rounded-2xl cursor-pointer border transition-all ${(selectedShowtime?.UUID || selectedShowtime?._id || selectedShowtime?.id) === (st.UUID || st._id || st.id) ? 'bg-red-600/10 border-red-600 shadow-md' : 'bg-[#140405] border-white/5 hover:border-white/20'}`}
                                 >
                                     <div className="flex gap-3 items-start">
                                         <div className="w-12 h-16 bg-gray-900 rounded-lg overflow-hidden shrink-0">
@@ -139,7 +139,7 @@ export default function PricingManagementPage() {
                                             )}
                                         </div>
                                         <div>
-                                            <p className={`font-bold text-sm line-clamp-1 mb-1 ${selectedShowtime?.id === st.id ? 'text-red-500' : 'text-gray-200'}`}>{st.movie?.title}</p>
+                                            <p className={`font-bold text-sm line-clamp-1 mb-1 ${(selectedShowtime?._id || selectedShowtime?.id) === (st._id || st.id) ? 'text-red-500' : 'text-gray-200'}`}>{st.movie?.title}</p>
                                             <div className="text-xs text-gray-500 space-y-1">
                                                 <p className="flex items-center gap-1"><Calendar size={12} /> {new Date(st.startTime).toLocaleDateString()}</p>
                                                 <p className="flex items-center gap-1"><Clock size={12} /> {new Date(st.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>

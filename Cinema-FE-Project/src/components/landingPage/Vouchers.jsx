@@ -4,11 +4,7 @@ import { useState } from 'react';
 const vouchers = [
   {
     id: 1,
-<<<<<<< HEAD
-    code: "FCINEMA20",
-=======
-    code: "STARLIGHT20",
->>>>>>> f77df780274e209b8ff6e296a4f03cf57a63b64a
+code: "STARLIGHT20",
     description: "20% OFF on all IMAX tickets",
     expiry: "Valid until Dec 31",
     type: "Discount"

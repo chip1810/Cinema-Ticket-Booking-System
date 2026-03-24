@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
-const PricingRule = require("../modules/pricing_rule/models/PricingRule");
-const Showtime = require("../modules/showtime/models/Showtime");
-const ApiResponse = require("../utils/ApiResponse");
+const PricingRule = require("../models/PricingRule");
+const Showtime = require("../../showtime/models/Showtime");
+const ApiResponse = require("../../../utils/ApiResponse");
 
 const ok = (res, data, msg, code = 200) => ApiResponse.success(res, data, msg, code);
 const fail = (res, e, code = 400) => ApiResponse.error(res, e.message ?? e, code);

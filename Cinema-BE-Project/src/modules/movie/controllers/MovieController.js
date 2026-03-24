@@ -1,5 +1,31 @@
 const MovieService = require("../services/MovieService");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 const ApiResponse = require("../../../utils/ApiResponse");
+
+// Upload directory for movie posters
+const UPLOADS_DIR = path.join(__dirname, "..", "..", "..", "uploads", "posters");
+if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+    filename: (_req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+        cb(null, `poster_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
+    },
+});
+
+const uploadPoster = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (_req, file, cb) => {
+        if (file.mimetype && file.mimetype.startsWith("image/")) return cb(null, true);
+        cb(new Error("Only image files are allowed"));
+    },
+}).single("poster");
 
 const movieService = new MovieService();
 
@@ -36,12 +62,25 @@ class MovieController {
         return ApiResponse.error(res, "genreIds must be a non-empty array", 400);
       }
 
+      // Support both file upload and Base64 data URL
+      let finalPosterUrl = posterUrl;
+      
+      if (req.file) {
+        // File upload from device
+        finalPosterUrl = `/uploads/posters/${req.file.filename}`;
+      } else if (posterUrl && posterUrl.startsWith('data:image/')) {
+        // Base64 data URL from frontend (FileReader)
+        finalPosterUrl = posterUrl;
+      } else if (!finalPosterUrl) {
+        return ApiResponse.error(res, { message: "posterUrl is required (file upload or Base64 data)" }, 400);
+      }
+
       const movie = await movieService.createMovie({
         title,
         description,
         duration: durationNum,
         releaseDate,
-        posterUrl,
+        posterUrl: finalPosterUrl,
         trailerUrl,
         status,
         genreIds,
@@ -53,7 +92,35 @@ class MovieController {
     }
   }
 
-  async getAll(_req, res) {
+  async uploadPoster(req, res) {
+    try {
+      uploadPoster(req, res, (err) => {
+        if (err) {
+          const msg = err.code === "LIMIT_FILE_SIZE" 
+            ? "Poster max 5MB" 
+            : err.message || "Upload failed";
+          return ApiResponse.error(res, msg, 400);
+        }
+        
+        if (req.file) {
+          // File upload from device
+          const posterData = {
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            size: req.file.size,
+            path: `/uploads/posters/${req.file.filename}`
+          };
+          return ApiResponse.success(res, posterData, "Poster uploaded successfully");
+        } else {
+          return ApiResponse.error(res, { message: "No file uploaded" }, 400);
+        }
+      });
+    } catch (e) {
+      return ApiResponse.error(res, e.message, 500);
+    }
+  }
+
+  async getAll(req, res) {
     try {
       const movies = await movieService.getAllMovies();
       return ApiResponse.success(res, movies, "Movies fetched successfully");
@@ -73,10 +140,12 @@ class MovieController {
 
   async getByUUID(req, res) {
     try {
-      const movie = await movieService.getMovieByUUID(req.params.uuid);
-      return ApiResponse.success(res, movie, "Movie fetched successfully");
+      const { uuid } = req.params;
+      const movie = await movieService.getMovieByUUID(uuid);
+      return ApiResponse.success(res, movie, "Movie details fetched successfully");
     } catch (e) {
-      return ApiResponse.error(res, e.message, 404);
+      console.error("getByUUID Error:", e);
+      return ApiResponse.error(res, e.message, 500);
     }
   }
 

@@ -1,5 +1,5 @@
-const { hallManagerService } = require("../services/HallManagerService");
-const ApiResponse = require("../utils/ApiResponse");
+const { hallManagerService } = require("../../../services/HallManagerService");
+const ApiResponse = require("../../../utils/ApiResponse");
 
 const ok = (res, data, msg, code = 200) => ApiResponse.success(res, data, msg, code);
 const fail = (res, e, code = 400) => ApiResponse.error(res, e.message ?? e, code);
