@@ -21,12 +21,16 @@ const SidebarItem = ({ to, icon: Icon, label }) => (
         className={({ isActive }) => `
       flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-500 group relative overflow-hidden
       ${isActive
-                ? 'bg-gradient-to-r from-red-600/20 to-transparent text-white border-l-4 border-red-600 shadow-[20px_0_40px_-20px_rgba(220,38,38,0.3)]'
-                : 'text-gray-500 hover:bg-white/5 hover:text-gray-200'}
+                ? "bg-gradient-to-r from-red-600/20 to-transparent text-white border-l-4 border-red-600 shadow-[20px_0_40px_-20px_rgba(220,38,38,0.3)]"
+                : "text-gray-500 hover:bg-white/5 hover:text-gray-200"
+            }
     `}
     >
         <div className="flex items-center gap-4 relative z-10">
-            <div className={`p-2 rounded-xl transition-colors duration-500 ${window.location.pathname === to ? 'bg-red-600 text-white shadow-lg' : 'group-hover:bg-white/10'}`}>
+            <div
+                className={`p-2 rounded-xl transition-colors duration-500 ${window.location.pathname === to ? "bg-red-600 text-white shadow-lg" : "group-hover:bg-white/10"
+                    }`}
+            >
                 <Icon size={18} className="group-hover:scale-110 transition-transform duration-300" />
             </div>
             <span className="font-bold text-sm tracking-wide">{label}</span>
@@ -36,25 +40,25 @@ const SidebarItem = ({ to, icon: Icon, label }) => (
 );
 
 export default function Sidebar() {
-    const { logout } = useAuth();
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     const menuItems = [
-        { to: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { to: '/manager/movies', icon: Clapperboard, label: 'Movies' },
-        { to: '/manager/genres', icon: Hash, label: 'Genres' },
-        { to: '/manager/showtimes', icon: Calendar, label: 'Showtimes' },
-        { to: '/manager/halls', icon: Armchair, label: 'Halls' },
-        { to: '/manager/concessions', icon: Popcorn, label: 'Concessions' },
-        { to: '/manager/pricing', icon: Ticket, label: 'Pricing' },
-        { to: '/manager/news', icon: Newspaper, label: 'News' },
-        { to: '/manager/banners', icon: ImageIcon, label: 'Banners' },
-        { to: '/manager/reviews', icon: MessageSquare, label: 'Reviews' },
+        { to: "/manager/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+        { to: "/manager/movies", icon: Clapperboard, label: "Movies" },
+        { to: "/manager/genres", icon: Hash, label: "Genres" },
+        { to: "/manager/showtimes", icon: Calendar, label: "Showtimes" },
+        { to: "/manager/halls", icon: Armchair, label: "Halls" },
+        { to: "/manager/concessions", icon: Popcorn, label: "Concessions" },
+        { to: "/manager/pricing", icon: Ticket, label: "Pricing" },
+        { to: "/manager/news", icon: Newspaper, label: "News" },
+        { to: "/manager/banners", icon: ImageIcon, label: "Banners" },
+        { to: "/manager/reviews", icon: MessageSquare, label: "Reviews" },
     ];
 
     const handleLogout = () => {
         logout();
-        navigate('/');
+        navigate("/", { replace: true });
     };
 
     return (
@@ -78,7 +82,7 @@ export default function Sidebar() {
             </nav>
 
             <div className="pt-6 border-t border-white/10 mt-6">
-                <button 
+                <button
                     onClick={handleLogout}
                     className="flex items-center gap-4 px-4 py-3.5 w-full text-gray-500 hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all duration-300 group"
                 >

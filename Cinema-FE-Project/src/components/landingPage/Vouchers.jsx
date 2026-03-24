@@ -4,7 +4,7 @@ import { useState } from 'react';
 const vouchers = [
   {
     id: 1,
-code: "STARLIGHT20",
+    code: "FCINEMA20",
     description: "20% OFF on all IMAX tickets",
     expiry: "Valid until Dec 31",
     type: "Discount"
@@ -74,7 +74,6 @@ export default function Vouchers() {
                 )}
               </div>
             </div>
-            {/* Decorative semi-circles for ticket look */}
             <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-background-dark rounded-full border-r border-white/10" />
             <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-background-dark rounded-full border-l border-white/10" />
           </div>

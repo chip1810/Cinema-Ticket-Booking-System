@@ -8,13 +8,25 @@ import Promotions from "../components/landingPage/Promotions";
 import ComingSoon from "../components/landingPage/ComingSoon";
 import CinemaMap from "../components/landingPage/CinemaMap";
 import Vouchers from "../components/landingPage/Vouchers";
+import AdvanceFilter, { applyFilters } from "../components/landingPage/AdvanceFilter";
 import { movieService } from "../services/movieService";
 
 export default function Home() {
-    const [nowShowing, setNowShowing] = useState([]);
-    const [comingSoon, setComingSoon] = useState([]);
+    const [allNowShowing, setAllNowShowing] = useState([]);
+    const [allComingSoon, setAllComingSoon] = useState([]);
+    const [genres, setGenres] = useState([]);
+    const [filters, setFilters] = useState({});
     const location = useLocation();
     const navigate = useNavigate();
+
+    // Fetch genres
+    useEffect(() => {
+        fetch(`${import.meta.env.VITE_BACKEND_URL || "https://cinema-ticket-booking-system-3.onrender.com"}/api/genres`)
+            .then((r) => r.ok ? r.json() : null)
+            .then((data) => { if (data?.data) setGenres(data.data); })
+            .catch(() => { });
+    }, []);
+
     useEffect(() => {
         if (!location.state?.focusMovies) return;
         const t = window.setTimeout(() => {
@@ -33,32 +45,27 @@ export default function Home() {
     useEffect(() => {
         movieService.getMovies()
             .then((data) => {
-                console.log("API RESPONSE:", data);
-
-                const movies = data.data;
-                console.log("ALL MOVIES:", movies);
-
-                const now = movies.filter(
-                    (movie) => movie.status === "Now Showing"
-                );
-
-                const soon = movies.filter(
-                    (movie) => movie.status === "Coming Soon"
-                );
-
-                console.log("NOW SHOWING:", now);
-                console.log("COMING SOON:", soon);
-
-                setNowShowing(now);
-                setComingSoon(soon);
+                const movies = data.data || [];
+                setAllNowShowing(movies.filter((m) => m.status === "Now Showing"));
+                setAllComingSoon(movies.filter((m) => m.status === "Coming Soon"));
             })
             .catch((err) => console.error("FETCH ERROR:", err));
     }, []);
+
+    const nowShowing = applyFilters(allNowShowing, filters);
+    const comingSoon = applyFilters(allComingSoon, filters);
     return (
         <main className="flex-1 pt-24">
             <Hero />
             <TicketPreview />
             <section id="movies" className="scroll-mt-24">
+                {/* Advance Filter */}
+                <div className="px-6 lg:px-20 pb-2">
+                    <AdvanceFilter
+                        genres={genres}
+                        onFilter={setFilters}
+                    />
+                </div>
                 <MovieGrid movies={nowShowing} />
             </section>
             <Promotions />

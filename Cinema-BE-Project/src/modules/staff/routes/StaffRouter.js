@@ -30,4 +30,11 @@ router.get(
   (req, res) => controller.getProfile(req, res)
 );
 
+router.get(
+  "/orders/by-uuid/:orderUUID",
+  authenticate,
+  authorize([UserRole.STAFF]),
+  (req, res) => controller.lookupOrderDetailByUUID(req, res)
+);
+
 module.exports = router;

@@ -97,7 +97,7 @@ class PaymentService {
             seats: payload.seatUUIDs || [],
             snacks: payload.snacks || [],
             totalAmount: amount,
-            status: OrderStatus.PAID, // trạng thái mới
+            status: OrderStatus.PENDING, // trạng thái mới
             createdAt: new Date(),
         };
 
@@ -138,7 +138,7 @@ class PaymentService {
             paymentLinkId: payosResp.paymentLinkId || null,
             checkoutUrl: payosResp.checkoutUrl || null,
             amount,
-            status: PaymentStatus.PAID,
+            status: PaymentStatus.PENDING,
             expiresAt,
             orderUUID: orderDoc.UUID, // link tới Order
         });
@@ -157,72 +157,71 @@ class PaymentService {
     }
 
     async handlePayOSWebhook(webhookBody) {
+        console.log("🔥🔥 WEBHOOK HIT 🔥🔥");
+        console.log("👉 BODY:", JSON.stringify(webhookBody, null, 2));
+
         // 1️⃣ Verify signature từ PayOS
-        const verified =
-            process.env.PAYOS_ALLOW_MOCK_WEBHOOK === "true" && webhookBody?.__mock === true
-                ? webhookBody
-                : this.payOS.webhooks.verify(webhookBody);
-
-        const envelope = verified?.data ? verified : { success: true, data: verified };
-        const data = envelope?.data || {};
-
-        const orderCode = Number(data.orderCode);
-        if (!Number.isFinite(orderCode)) {
-            throw new Error("Invalid webhook orderCode");
+        let verified;
+        try {
+            verified =
+                process.env.PAYOS_ALLOW_MOCK_WEBHOOK === "true" && webhookBody?.__mock === true
+                    ? webhookBody
+                    : this.payOS.webhooks.verify(webhookBody);
+            console.log("[WEBHOOK] Signature verified successfully");
+        } catch (err) {
+            console.error("[WEBHOOK] Signature verification failed:", err.message);
+            return { ignored: true, reason: "Invalid signature" };
         }
 
-        // 2️⃣ Tìm PaymentTransaction tương ứng
+        // 2️⃣ Chuẩn hóa data từ webhook
+        const data = verified?.data || webhookBody?.data || {};
+        const orderCode = Number(data.orderCode);
+
+        if (!Number.isFinite(orderCode)) {
+            console.warn("⚠️ Webhook không có orderCode (test call)", data);
+            return { ignored: true, reason: "Missing orderCode" };
+        }
+
+        console.log("[WEBHOOK] Processing orderCode:", orderCode);
+
+        // 3️⃣ Tìm PaymentTransaction tương ứng
         const tx = await PaymentTransaction.findOne({ orderCode });
         if (!tx) {
-            console.log("[WEBHOOK] Transaction not found for orderCode:", orderCode);
-            return {
-                ignored: true,
-                reason: "Transaction not found",
-                orderCode,
-            };
+            console.warn("[WEBHOOK] Transaction not found for orderCode:", orderCode);
+            return { ignored: true, reason: "Transaction not found", orderCode };
         }
 
-        // 3️⃣ Idempotent: tránh xử lý lại
+        // 4️⃣ Idempotent: tránh xử lý lại
         if (tx.status === PaymentStatus.PAID) {
-            return {
-                ignored: true,
-                reason: "Already paid",
-                orderCode,
-                orderUUID: tx.orderUUID,
-            };
+            console.log("[WEBHOOK] Transaction already PAID, ignoring");
+            return { ignored: true, reason: "Already paid", orderCode, orderUUID: tx.orderUUID };
         }
-
         if ([PaymentStatus.CANCELLED, PaymentStatus.FAILED].includes(tx.status)) {
-            return {
-                ignored: true,
-                reason: `Already finalized as ${tx.status}`,
-                orderCode,
-                status: tx.status,
-            };
+            console.log(`[WEBHOOK] Transaction already finalized as ${tx.status}, ignoring`);
+            return { ignored: true, reason: `Already finalized as ${tx.status}`, orderCode, status: tx.status };
         }
 
-        // 4️⃣ Validate amount chống giả mạo/chênh lệch
+        // 5️⃣ Validate amount chống giả mạo/chênh lệch
         if (Number(data.amount) !== Number(tx.amount)) {
             tx.status = PaymentStatus.FAILED;
             tx.failReason = "Amount mismatch";
             tx.rawWebhook = webhookBody;
             await tx.save();
-
-            return {
-                updated: true,
-                orderCode,
-                status: tx.status,
-                reason: tx.failReason,
-            };
+            console.warn("[WEBHOOK] Amount mismatch", { orderCode, expected: tx.amount, actual: data.amount });
+            return { updated: true, orderCode, status: tx.status, reason: tx.failReason };
         }
 
-        // 5️⃣ Kiểm tra thanh toán thành công
-        const paid = envelope.success === true && String(data.code) === "00";
+        // 6️⃣ Kiểm tra thanh toán thành công
+        // ✅ Fix boolean/string issue + debug log
+        const successFlag = webhookBody.success;
+        const paid = (successFlag === true || successFlag === "true" || successFlag === 1 || successFlag === "1")
+            && String(data.code) === "00";
+        console.log("[WEBHOOK] paid check:", { successFlag, dataCode: data.code, paid });
 
         if (!paid) {
             // Không thành công / cancel
             tx.status = PaymentStatus.CANCELLED;
-            tx.failReason = data.desc || envelope.desc || "Payment cancelled/failed";
+            tx.failReason = data.desc || verified.desc || "Payment cancelled/failed";
             tx.rawWebhook = webhookBody;
             await tx.save();
 
@@ -230,30 +229,22 @@ class PaymentService {
 
             // Update Order tương ứng
             if (tx.orderUUID) {
-                await Order.updateOne(
-                    { UUID: tx.orderUUID },
-                    { $set: { status: OrderStatus.CANCELLED } }
-                );
+                await Order.updateOne({ UUID: tx.orderUUID }, { $set: { status: OrderStatus.CANCELLED } });
             }
 
-            return {
-                updated: true,
-                orderCode,
-                status: tx.status,
-                reason: tx.failReason,
-            };
+            console.log("[WEBHOOK] Payment failed/cancelled for orderCode:", orderCode, "reason:", tx.failReason);
+            return { updated: true, orderCode, status: tx.status, reason: tx.failReason };
         }
 
-        // 6️⃣ Thanh toán thành công -> confirm booking
+        // 7️⃣ Thanh toán thành công -> confirm booking
         try {
+            console.log("[WEBHOOK] Payment marked as PAID, confirming booking...");
+
             const bookingResult = await seatService.confirmBooking(tx.checkoutToken, String(tx.user));
 
             // Update Order thành PAID
             if (tx.orderUUID) {
-                await Order.updateOne(
-                    { UUID: bookingResult.orderUUID },
-                    { $set: { status: OrderStatus.PAID } }
-                );
+                await Order.updateOne({ UUID: bookingResult.orderUUID }, { $set: { status: OrderStatus.PAID } });
             }
 
             tx.status = PaymentStatus.PAID;
@@ -264,13 +255,7 @@ class PaymentService {
             await tx.save();
 
             console.log("[WEBHOOK] Payment success for orderCode:", orderCode, "orderUUID:", tx.orderUUID);
-
-            return {
-                updated: true,
-                orderCode,
-                status: tx.status,
-                orderUUID: tx.orderUUID,
-            };
+            return { updated: true, orderCode, status: tx.status, orderUUID: tx.orderUUID };
         } catch (e) {
             // Thanh toán thành công nhưng confirm booking thất bại
             tx.status = PaymentStatus.FAILED;
@@ -278,22 +263,12 @@ class PaymentService {
             tx.rawWebhook = webhookBody;
             await tx.save();
 
-            // Update Order thành FAILED nếu có
             if (tx.orderUUID) {
-                await Order.updateOne(
-                    { UUID: tx.orderUUID },
-                    { $set: { status: OrderStatus.FAILED } }
-                );
+                await Order.updateOne({ UUID: tx.orderUUID }, { $set: { status: OrderStatus.FAILED } });
             }
 
-            console.log("[WEBHOOK] Payment confirmed but booking failed for orderCode:", orderCode);
-
-            return {
-                updated: true,
-                orderCode,
-                status: tx.status,
-                reason: tx.failReason,
-            };
+            console.error("[WEBHOOK] Payment confirmed but booking failed for orderCode:", orderCode, e);
+            return { updated: true, orderCode, status: tx.status, reason: tx.failReason };
         }
     }
 
@@ -316,22 +291,53 @@ class PaymentService {
     async expirePendingTransactions() {
         const now = new Date();
 
-        const result = await PaymentTransaction.updateMany(
-            {
-                status: PaymentStatus.PENDING,
-                expiresAt: { $lte: now },
-            },
-            {
-                $set: {
-                    status: PaymentStatus.CANCELLED,
-                    failReason: "EXPIRED",
-                },
+        const expiredTxs = await PaymentTransaction.find({
+            status: PaymentStatus.PENDING,
+            expiresAt: { $lte: now },
+        }).select("_id user checkoutToken orderUUID orderCode");
+
+        let cancelledCount = 0;
+
+        for (const tx of expiredTxs) {
+            // 1) nhả ghế hold
+            try {
+                await seatService.releaseHeldSeatsByCheckoutToken(
+                    tx.checkoutToken,
+                    String(tx.user)
+                );
+            } catch (e) {
+                console.warn(
+                    `[payment-cleanup] release seats failed for orderCode=${tx.orderCode}:`,
+                    e.message
+                );
             }
-        );
 
-        return result.modifiedCount || 0;
+            // 2) cancel payment tx (idempotent)
+            const updated = await PaymentTransaction.updateOne(
+                { _id: tx._id, status: PaymentStatus.PENDING },
+                {
+                    $set: {
+                        status: PaymentStatus.CANCELLED,
+                        failReason: "EXPIRED",
+                    },
+                }
+            );
+
+            if (updated.modifiedCount > 0) {
+                cancelledCount++;
+
+                // 3) cancel order liên quan (nếu có)
+                if (tx.orderUUID) {
+                    await Order.updateOne(
+                        { UUID: tx.orderUUID, status: { $ne: OrderStatus.PAID } },
+                        { $set: { status: OrderStatus.CANCELLED } }
+                    );
+                }
+            }
+        }
+
+        return cancelledCount;
     }
-
 
     async cancelByUser(orderCode, userId, reason = "USER_CANCELLED") {
         const tx = await PaymentTransaction.findOne({

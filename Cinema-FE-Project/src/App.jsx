@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Header from './components/landingPage/Header';
 import Home from './pages/Home';
+import SearchResults from './pages/SearchResults';
+import MoviesBrowse from './pages/MoviesBrowse';
 import Footer from './components/landingPage/Footer';
 import MovieDetail from './pages/MovieDetail';
 import GoogleAuthCallback from './pages/GoogleAuthCallback';
@@ -36,6 +38,8 @@ import SettingsPage from './pages/admin/SettingsPage/SettingsPage';
 import PaymentResultPage from './pages/PaymentResultPage';
 
 import StaffDashboard from './pages/staff/StaffDashboard';
+import BookingHistoryPage from './pages/customer/BookingHistoryPage/BookingHistoryPage';
+import BookingDetailPage from './pages/customer/BookingDetailPage/BookingDetailPage';
 
 // Layout cho các trang khách hàng (Home, Movie Detail...)
 const CustomerLayout = () => (
@@ -64,12 +68,16 @@ export default function App() {
           {/* Nhóm trang Public: Sẽ có Header và Footer */}
           <Route element={<CustomerLayout />}>
             <Route path="/" element={<Home />} />
+            <Route path="/search" element={<SearchResults />} />
+            <Route path="/movies" element={<MoviesBrowse />} />
             <Route path="/movies/:uuid" element={<MovieDetail />} />
             <Route path="/booking/:uuid" element={<BookingFlow />} />
             <Route path="/payment/result" element={<PaymentResultPage />} />
             <Route path="/auth/google/success" element={<GoogleAuthCallback />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/booking-history" element={<BookingHistoryPage />}/>
+            <Route path="/booking-history/:orderUUID" element={<BookingDetailPage />}/>
           </Route>
 
           {/* Trang Staff: Đứng độc lập, không dính Header/Footer khách hàng */}

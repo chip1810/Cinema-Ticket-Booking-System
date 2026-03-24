@@ -59,39 +59,48 @@ export default function BookingFlow() {
     };
 
     const handleConcessionNext = async (finalOrder) => {
+        // mở trước tab để tránh popup block
+        const payWindow = window.open("", "_blank");
+
         try {
-            const showtimeUUID = finalOrder?.showtime?.UUID;
-            const seatUUIDs = finalOrder?.selectedSeats || [];
-
-            const concessions = (finalOrder?.snacks || [])
-                .filter((s) => s.quantity > 0)
-                .map((s) => ({
-                    concessionUUID: s.UUID,
-                    quantity: s.quantity,
-                }));
-
-            if (!showtimeUUID || seatUUIDs.length === 0) {
-                throw new Error("Thiếu showtime hoặc ghế đã chọn");
+            if (payWindow) {
+                payWindow.document.write("<p style='font-family:sans-serif'>Dang chuyen den PayOS...</p>");
+                payWindow.document.close();
             }
 
-            // 1) lấy checkoutToken
             const previewData = await seatService.checkoutPreview({
-                showtimeUUID,
-                seatUUIDs,
-                concessions,
+                showtimeUUID: finalOrder?.showtime?.UUID,
+                seatUUIDs: finalOrder?.selectedSeats || [],
+                concessions: (finalOrder?.snacks || [])
+                    .filter((s) => s.quantity > 0)
+                    .map((s) => ({ concessionUUID: s.UUID, quantity: s.quantity })),
                 voucherUUID: null,
-                voucherCode: null,
+                voucherCode: finalOrder?.voucherCode || null,
             });
 
-            // 2) tạo link PayOS
             const paymentData = await paymentService.createPayOSLink(previewData.checkoutToken);
-            console.log(paymentData);
+            console.log("paymentData:", paymentData);
 
-            // 3) redirect sang trang thanh toán
-            window.location.href = paymentData.checkoutUrl;
+            const checkoutUrl = paymentData?.checkoutUrl;
+            const orderCode = paymentData?.orderCode;
+
+            if (!checkoutUrl || !orderCode) {
+                throw new Error("Khong nhan duoc checkoutUrl/orderCode tu createPayOSLink");
+            }
+
+            // gắn link thật vào tab đã mở
+            if (payWindow && !payWindow.closed) {
+                payWindow.location.replace(checkoutUrl);
+            } else {
+                window.open(checkoutUrl, "_blank");
+            }
+
+            // tab hiện tại sang trang result để auto polling status
+            navigate(`/payment/result?orderCode=${encodeURIComponent(orderCode)}`, { replace: true });
         } catch (err) {
-            console.error("❌ Payment flow error:", err);
-            alert(err.message || "Không thể tạo thanh toán, vui lòng thử lại.");
+            console.error("Payment flow error:", err);
+            if (payWindow && !payWindow.closed) payWindow.close();
+            alert(err.message || "Khong the tao thanh toan");
         }
     };
 

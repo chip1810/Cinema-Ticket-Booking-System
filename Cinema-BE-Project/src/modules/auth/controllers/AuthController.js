@@ -6,10 +6,12 @@ const authService = new AuthService();
 
 class AuthController {
   async register(req, res) {
-    const { email, password, fullName } = req.body;
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "").trim();
+    const fullName = req.body.fullName != null ? String(req.body.fullName).trim() : "";
 
     if (!email || !password) {
-      return ApiResponse.error(res, "Email and password are required", 400);
+      return ApiResponse.error(res, "Vui lòng nhập email và mật khẩu", 400);
     }
 
     try {
@@ -20,11 +22,43 @@ class AuthController {
     }
   }
 
+  async verifyEmail(req, res) {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const otp = String(req.body.otp || "").trim();
+
+    if (!email || !otp) {
+      return ApiResponse.error(res, "Email và mã OTP là bắt buộc", 400);
+    }
+
+    try {
+      const result = await authService.verifyEmail({ email, otp });
+      return ApiResponse.success(res, result, "Verify successfully");
+    } catch (e) {
+      return ApiResponse.error(res, e.message, 400);
+    }
+  }
+
+  async resendVerifyEmail(req, res) {
+    const email = String(req.body.email || "").trim().toLowerCase();
+
+    if (!email) {
+      return ApiResponse.error(res, "Vui lòng nhập email", 400);
+    }
+
+    try {
+      const result = await authService.resendVerifyEmail(email);
+      return ApiResponse.success(res, result, "OTP resent");
+    } catch (e) {
+      return ApiResponse.error(res, e.message, 400);
+    }
+  }
+
   async login(req, res) {
-    const { email, password } = req.body;
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "").trim();
 
     if (!email || !password) {
-      return ApiResponse.error(res, "Email and password are required", 400);
+      return ApiResponse.error(res, "Vui lòng nhập email và mật khẩu", 400);
     }
 
     try {
