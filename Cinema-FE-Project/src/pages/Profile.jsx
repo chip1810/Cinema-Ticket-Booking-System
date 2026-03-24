@@ -5,7 +5,7 @@ import { updateProfile, uploadProfileAvatar, changePassword } from "../services/
 import Swal from "sweetalert2";
 
 const API_BASE =
-    process.env.BACKEND_URL?.replace(/\/$/, "") || "https://cinema-ticket-booking-system-3.onrender.com";
+    process.env.BACKEND_URL?.replace(/\/$/, "") || "http://localhost:3000";
 
 function getAvatarUrl(avatar) {
     if (!avatar) return `${API_BASE}/uploads/default-avatar.svg`;

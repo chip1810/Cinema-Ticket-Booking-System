@@ -1,5 +1,5 @@
 // src/services/staffService.js
-const BASE_URL = "https://cinema-ticket-booking-system-3.onrender.com/api/staff";
+const BASE_URL = "http://localhost:3000/api/staff";
 
 export const staffService = {
 

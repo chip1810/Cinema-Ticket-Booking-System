@@ -4,7 +4,7 @@ import { API_BASE_URL } from '../config/api';
 /**
  * Base URL gọi API:
  * - Nếu có BACKEND_URL trong .env → dùng (vd: http://localhost:5000/api khi BE chạy cổng 5000).
- * - Dev không set env: dùng "/api" + "proxy" trong package.json → CRA chuyển tới https://cinema-ticket-booking-system-3.onrender.com
+ * - Dev không set env: dùng "/api" + "proxy" trong package.json → CRA chuyển tới http://localhost:3000
  *   (tránh gọi nhầm vào chính dev server React → 404).
  * - Production build: nên set BACKEND_URL trỏ domain API thật.
  */
