@@ -38,6 +38,7 @@ class PaymentController {
             });
         }
     }
+
     async getStatus(req, res) {
         if (!req.user) return ApiResponse.error(res, "Unauthorized", 401);
 

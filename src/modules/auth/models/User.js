@@ -16,6 +16,9 @@ const UserSchema = new Schema({
   fullName: { type: String },
   phoneNumber: { type: String, unique: true, sparse: true },
   isBlocked: { type: Boolean, default: false },
+  isVerified: { type: Boolean, default: false },
+  verifyEmailOTP: { type: String },
+  verifyEmailExpires: { type: Date },
   resetPasswordOTP: { type: String },
   resetPasswordExpires: { type: Date },
   // Google OAuth fields
