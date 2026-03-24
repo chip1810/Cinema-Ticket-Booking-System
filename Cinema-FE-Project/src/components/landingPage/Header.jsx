@@ -58,7 +58,9 @@ export default function Header() {
         if (decoded.role === "admin") {
           navigate("/admin"); // 👉 admin vào trang admin
         } else if (decoded.role === "staff") {
-          navigate("/staff"); // 👉 staff vào dashboard
+          navigate("/staff");
+        } else if (decoded.role === "manager") {
+          navigate("/manager"); // 👉 staff vào dashboard
         } else {
           navigate("/profile"); // 👉 user thường
         }
@@ -90,7 +92,6 @@ export default function Header() {
           <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Movies</a>
           <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Venues</a>
           <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Offers</a>
-          <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="/manager">Manager Portal</a>
         </nav>
       </div>
 
