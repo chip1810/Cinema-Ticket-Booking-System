@@ -220,7 +220,7 @@ export default function Header() {
                           </p>
                         </div>
                         <span className="text-yellow-500 text-[10px] font-black flex items-center gap-0.5 flex-shrink-0">
-                          ★ {movie.rating || "8.5"}
+                          ★ {movie.rating || "5"}
                         </span>
                       </button>
                     ))}
@@ -243,13 +243,13 @@ export default function Header() {
         </div>
 
         {!user ? (
-          <button 
-            ref={loginBtnRef} 
+          <button
+            ref={loginBtnRef}
             onClick={() => {
               const rect = loginBtnRef.current.getBoundingClientRect();
               setModalPos({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
               setShowAuth(true);
-            }} 
+            }}
             className="btn-primary !px-8 !py-3 !text-xs"
           >
             Login
@@ -263,10 +263,10 @@ export default function Header() {
             </button>
             <AnimatePresence>
               {showMenu && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  exit={{ opacity: 0, y: 10 }} 
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
                   className="absolute right-0 mt-4 w-56 bg-neutral-900/95 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] shadow-2xl overflow-hidden p-2"
                 >
                   <button onClick={handleProfileClick} className="w-full text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-all">Profile Setup</button>

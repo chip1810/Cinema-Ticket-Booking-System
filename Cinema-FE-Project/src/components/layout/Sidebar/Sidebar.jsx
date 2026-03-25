@@ -68,7 +68,7 @@ export default function Sidebar() {
                     <Clapperboard className="text-white" size={24} />
                 </div>
                 <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 font-display">
-                    CinéManager
+                    CineManager
                 </h1>
             </div>
 

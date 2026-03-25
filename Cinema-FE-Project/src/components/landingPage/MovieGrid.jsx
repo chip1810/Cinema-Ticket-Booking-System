@@ -91,7 +91,7 @@ export default function MovieGrid({
 
                             <div className="absolute top-6 left-6 glass-effect px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/20">
                                 <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
-                                <span className="text-white text-[11px] font-black">{movie.rating || "8.5"}</span>
+                                <span className="text-white text-[11px] font-black">{movie.rating || "5"}</span>
                             </div>
                         </div>
 

@@ -144,11 +144,11 @@ export default function AdminDashboard() {
                     transition={{ delay: 0.3 }}
                     className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm"
                 >
-                    <h3 className="text-xl font-bold mb-6">Doanh thu theo rạp</h3>
+                    <h3 className="text-xl font-bold mb-6">Doanh thu</h3>
                     <div className="space-y-4 max-h-80 overflow-y-auto">
                         {cinemaRevenue.slice(0, 8).map((c, i) => (
                             <div key={c.branchId || i} className="flex justify-between items-center py-2 border-b border-white/5">
-                                <span className="font-medium truncate pr-2">{c.branchName}</span>
+                                <span className="font-medium truncate pr-2">Tổng:</span>
                                 <span className="text-green-500 font-bold">{formatVND(c.revenue || 0)}</span>
                             </div>
                         ))}

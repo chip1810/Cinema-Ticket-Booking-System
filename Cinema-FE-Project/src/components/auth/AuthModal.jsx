@@ -170,7 +170,7 @@ export default function AuthModal({ isOpen, onClose, origin }) {
                 style={{
                     position: "fixed",
                     left: "50%",
-                    top: "50%",
+                    top: "400%",
                     transformOrigin: origin
                         ? `${origin.x - window.innerWidth / 2 + 200}px ${origin.y - window.innerHeight / 2 + 100}px`
                         : "center",

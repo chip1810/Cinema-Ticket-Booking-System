@@ -44,7 +44,7 @@ const GenreMultiSelect = ({ genres, selectedIds, onChange }) => {
 
     return (
         <div className="relative">
-            <label className="text-sm text-gray-400 font-medium mb-2 block">ジャンル (Genres)</label>
+            <label className="text-sm text-gray-400 font-medium mb-2 block">Thể loại (Genres)</label>
             <div 
                 onClick={() => setIsOpen(!isOpen)}
                 className="min-h-[52px] w-full bg-white/5 border border-white/10 rounded-xl py-2 px-3 cursor-pointer flex flex-wrap gap-2 hover:border-red-600/50 transition-all items-center"

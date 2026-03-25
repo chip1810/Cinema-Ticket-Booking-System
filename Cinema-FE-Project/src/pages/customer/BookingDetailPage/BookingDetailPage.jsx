@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 import {
   ArrowLeft,
   Receipt,
@@ -96,7 +97,7 @@ export default function BookingDetailPage() {
 
   if (err || !order) {
     return (
-      <section className="min-h-screen pt-28 pb-16 px-4 sm:px-6 lg:px-8 text-white">
+<section className="min-h-screen pt-28 pb-16 px-4 sm:px-6 lg:px-8 text-white">
         <div className="max-w-5xl mx-auto rounded-3xl border border-red-500/20 bg-red-500/5 p-6">
           <p className="text-red-300 font-semibold">Khong the tai chi tiet don</p>
           <p className="text-sm text-slate-300 mt-2">{err || "Don hang khong ton tai"}</p>
@@ -124,6 +125,12 @@ export default function BookingDetailPage() {
 
   const ticketsTotal = (order.tickets || []).reduce((sum, t) => sum + Number(t.price || 0), 0);
   const itemsTotal = (order.items || []).reduce((sum, i) => sum + Number(i.subtotal || 0), 0);
+
+  // Safe QR value: khong bi crash khi order null luc initial render
+  const bookingUuid = order?.orderUUID || orderUUID;
+  const bookingUrl = bookingUuid
+    ? `${window.location.origin}/booking-history/${bookingUuid}`
+    : "";
 
   return (
     <section className="min-h-screen pt-28 pb-16 px-4 sm:px-6 lg:px-8 text-white">
@@ -154,7 +161,7 @@ export default function BookingDetailPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3">
                 <p className="text-[11px] uppercase tracking-widest text-slate-500">Phim</p>
-                <p className="mt-1 font-semibold text-slate-200">{movie?.title || "Unknown movie"}</p>
+<p className="mt-1 font-semibold text-slate-200">{movie?.title || "Unknown movie"}</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3">
                 <p className="text-[11px] uppercase tracking-widest text-slate-500">Thoi gian dat</p>
@@ -208,7 +215,7 @@ export default function BookingDetailPage() {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/10 flex items-center gap-2">
+<div className="px-5 py-4 border-b border-white/10 flex items-center gap-2">
                 <Popcorn className="w-4 h-4 text-amber-300" />
                 <h2 className="font-bold">Combo / Bap nuoc</h2>
               </div>
@@ -238,6 +245,20 @@ export default function BookingDetailPage() {
                 <h2 className="font-bold">Tong ket thanh toan</h2>
               </div>
 
+              <div className="rounded-2xl border border-white/10 bg-black/25 p-5 mb-4">
+                <h2 className="font-bold mb-3">Ma QR ve</h2>
+                {bookingUrl ? (
+                  <>
+                    <div className="bg-white p-3 rounded-xl inline-block">
+                      <QRCodeSVG value={bookingUrl} size={180} />
+                    </div>
+                    {/* <p className="mt-3 text-xs text-slate-400 break-all">{bookingUrl}</p> */}
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-500">Khong tao duoc QR cho don nay.</p>
+                )}
+              </div>
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-slate-300">
                   <span>Tien ve</span>
@@ -255,7 +276,7 @@ export default function BookingDetailPage() {
                 <div className="flex justify-between text-white font-bold text-base">
                   <span>Tong thanh toan</span>
                   <span>{Number(order.totalAmount || 0).toLocaleString("vi-VN")} đ</span>
-                </div>
+</div>
               </div>
             </div>
 
