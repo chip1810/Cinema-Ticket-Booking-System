@@ -1,4 +1,4 @@
-const ShowtimeController = require("../controllers/ShowtimeController"); 
+const ShowtimeController = require("../controllers/showtimeController");
 const controller = new ShowtimeController();
 const router = require("express").Router();
 
