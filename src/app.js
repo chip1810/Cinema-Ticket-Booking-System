@@ -40,13 +40,15 @@ const AuthController = require("./modules/auth/controllers/AuthController");
 const GoogleAuthController = require("./modules/auth/controllers/GoogleAuthController");
 const ProfileController = require("./modules/auth/controllers/ProfileController");
 const MovieController = require("./modules/movie/controllers/MovieController");
-const ShowtimeController = require("./controllers/ShowtimeController");
-const PricingController = require("./controllers/PricingController");
-const HallManagerController = require("./controllers/HallManagerController");
-const PricingManagerController = require("./controllers/PricingManagerController");
-const NewsController = require("./controllers/NewsController");
-const BannerController = require("./controllers/BannerController");
-const DashboardController = require("./controllers/DashboardController");
+const ShowtimeController = require("./modules/showtime/controllers/ShowtimeController");
+const PricingController = require("./modules/pricing_rule/controllers/PricingController");
+const HallManagerController = require("./modules/hall/controllers/HallManagerController");
+const PricingManagerController = require("./modules/pricing_rule/controllers/PricingManagerController");
+const NewsController = require("./modules/news/controllers/NewsController");
+const BannerController = require("./modules/banner/controllers/BannerController");
+const DashboardController = require("./modules/manager/controllers/DashboardController");
+const GenreController = require("./modules/genre/controllers/GenreController");
+const ReviewController = require("./modules/review/controllers/ReviewController");
 const staffRouter = require("./modules/staff/routes/StaffRouter");
 const seatRouter = require("./modules/seat/routes/SeatRoute");
 const adminRoutes = require("./modules/admin/routes/admin.routes");
@@ -63,6 +65,12 @@ const Hall = require("./modules/hall/models/Hall");
 const Genre = require("./modules/genre/models/Genre");
 
 const app = express();
+
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(express.json({ limit: "50mb" }));
 app.use(cors());
 app.use(helmet({
@@ -82,7 +90,7 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/genres", genreRoutes);
 
-// ── Serve avatar files (cả uploads/ và uploads/avatars/) ───────────────────
+// ── Serve upload files (avatars, posters, banners) ───────────────────
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // Middlewares
@@ -103,6 +111,8 @@ const pricingManager = new PricingManagerController();
 const news = new NewsController();
 const banner = new BannerController();
 const dashboard = new DashboardController();
+const genre = new GenreController();
+const review = new ReviewController();
 
 // --- Auth ---
 app.post("/api/auth/register", (req, res) => auth.register(req, res));
@@ -140,55 +150,18 @@ app.get("/api/auth/google/verify", require("./middlewares/authenticate"), (req, 
 app.get("/api/movies", (req, res) => movie.getAll(req, res));
 app.get("/api/movies/search", (req, res) => movie.search(req, res));
 app.get("/api/movies/:id", (req, res) => movie.getById(req, res));
+app.post("/api/manager/movies/upload", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => movie.uploadPoster(req, res));
 app.post("/api/movies", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => movie.create(req, res));
 app.put("/api/movies/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => movie.update(req, res));
 app.delete("/api/movies/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => movie.delete(req, res));
 app.get("/api/movies/uuid/:uuid", (req, res) => movie.getByUUID(req, res));
 app.patch("/api/manager/movies/:id/trailer", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => movie.updateTrailer(req, res));
 
-// --- Genre (Manager / Movie form) ---
-app.get("/api/genres", async (_req, res) => {
-  try {
-    const list = await Genre.find().sort({ name: 1 });
-    return ApiResponse.success(res, list, "Genres fetched successfully");
-  } catch (e) {
-    return ApiResponse.error(res, e.message, 500);
-  }
-});
+// --- Genre Management ---
+app.get("/api/genres", (req, res) => genre.getAll(req, res));
+app.post("/api/genres", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => genre.create(req, res));
+app.delete("/api/genres/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => genre.delete(req, res));
 
-app.post("/api/genres", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), async (req, res) => {
-  try {
-    const name = req.body?.name;
-    const description = req.body?.description;
-    if (!name || !String(name).trim()) {
-      return ApiResponse.error(res, "name is required", 400);
-    }
-    const g = await Genre.create({
-      name: String(name).trim(),
-      description: description != null ? String(description) : undefined,
-    });
-    return ApiResponse.success(res, g, "Genre created", 201);
-  } catch (e) {
-    return ApiResponse.error(res, e.message, 400);
-  }
-});
-
-app.delete("/api/genres/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), async (req, res) => {
-  try {
-    const id = req.params.id;
-    const or = [{ UUID: id }];
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      or.push({ _id: id });
-    }
-    const deleted = await Genre.findOneAndDelete({ $or: or });
-    if (!deleted) {
-      return ApiResponse.error(res, "Genre not found", 404);
-    }
-    return ApiResponse.success(res, null, "Genre deleted");
-  } catch (e) {
-    return ApiResponse.error(res, e.message, 400);
-  }
-});
 
 // --- Showtime ---
 app.get("/api/showtimes/:id", (req, res) => showtime.getById(req, res));
@@ -209,6 +182,7 @@ app.delete("/api/manager/news/:id", authenticate, authorize([UserRole.MANAGER, U
 
 // --- Banner Routes ---
 app.get("/api/banners", (req, res) => banner.getAll(req, res));
+app.post("/api/manager/banners/upload", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => banner.uploadBanner(req, res));
 app.post("/api/manager/banners", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => banner.create(req, res));
 app.put("/api/manager/banners/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => banner.update(req, res));
 app.patch("/api/manager/banners/:id/toggle", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => banner.toggle(req, res));
@@ -217,20 +191,29 @@ app.delete("/api/manager/banners/:id", authenticate, authorize([UserRole.MANAGER
 // --- Dashboard ---
 app.get("/api/manager/dashboard/summary", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => dashboard.getSummary(req, res));
 app.get("/api/manager/dashboard/movies", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => dashboard.getMovieStats(req, res));
+app.get("/api/manager/dashboard/export", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => dashboard.exportSummary(req, res));
 
-// --- Hall ---
-app.get("/api/manager/halls", (req, res) => hallManager.getAllHalls(req, res));
-app.get("/api/manager/halls/:id", (req, res) => hallManager.getHallById(req, res));
-app.post("/api/manager/halls", (req, res) => hallManager.createHall(req, res));
-app.put("/api/manager/halls/:id", (req, res) => hallManager.updateHall(req, res));
-app.delete("/api/manager/halls/:id", (req, res) => hallManager.deleteHall(req, res));
-app.get("/api/manager/halls/:id/layout", (req, res) => hallManager.getSeatLayout(req, res));
-app.post("/api/manager/halls/:id/layout", (req, res) => hallManager.setSeatLayout(req, res));
+// --- Hall Management ---
+app.get("/api/manager/halls", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.getAllHalls(req, res));
+app.get("/api/manager/halls/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.getHallById(req, res));
+app.post("/api/manager/halls", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.createHall(req, res));
+app.put("/api/manager/halls/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.updateHall(req, res));
+app.delete("/api/manager/halls/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.deleteHall(req, res));
+app.get("/api/manager/halls/:id/layout", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.getSeatLayout(req, res));
+app.post("/api/manager/halls/:id/layout", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => hallManager.setSeatLayout(req, res));
+
 
 // --- Pricing rules ---
 app.get("/api/manager/pricing/:showtimeId", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => pricingManager.getByShowtime(req, res));
 app.post("/api/manager/pricing", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => pricingManager.setRules(req, res));
 app.delete("/api/manager/pricing/:showtimeId", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => pricingManager.deleteByShowtime(req, res));
+
+// --- Review Moderation ---
+app.get("/api/reviews", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => review.listForModeration(req, res));
+app.get("/api/movies/:movieId/reviews", (req, res) => review.getByMovie(req, res));
+app.patch("/api/reviews/:id/moderate", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => review.moderate(req, res));
+app.delete("/api/reviews/:id", authenticate, authorize([UserRole.MANAGER, UserRole.ADMIN]), (req, res) => review.delete(req, res));
+
 
 // --- Seed Route (Dev only) ---
 app.post("/api/seed", async (_req, res) => {
@@ -267,4 +250,4 @@ app.get("/", (_req, res) =>
   res.json({ status: "ok", message: "Cinema API running" })
 );
 
-module.exports = { app };
+module.exports = app;

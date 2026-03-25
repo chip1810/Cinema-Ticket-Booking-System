@@ -5,29 +5,47 @@ const Movie = require("../../movie/models/Movie");
 
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
 
+const mapShowtime = (s) => ({
+  _id: s._id,
+  id: s._id,
+  UUID: s.UUID,
+  startTime: s.startTime,
+  endTime: s.endTime,
+  status: s.status,
+  price: s.price || 0,
+  movie: s.movie ? {
+    _id: s.movie._id,
+    UUID: s.movie.UUID || s.movie._id,
+    title: s.movie.title,
+    duration: s.movie.duration,
+    posterUrl: s.movie.posterUrl,
+  } : null,
+  hall: s.hall ? {
+    _id: s.hall._id,
+    UUID: s.hall.UUID || s.hall._id,
+    name: s.hall.name,
+  } : null,
+});
+
 const showtimeService = {
-  async getAllShowtimes() {
-    const showtimes = await Showtime.find({ status: "Active" }) // hoặc require ShowtimeStatus.ACTIVE
+  async getAllShowtimes(query = {}) {
+    const { date } = query;
+    let filter = { status: "Active" };
+    
+    if (date) {
+      const start = new Date(date);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(date);
+      end.setHours(23, 59, 59, 999);
+      filter.startTime = { $gte: start, $lte: end };
+    }
+
+    const showtimes = await Showtime.find(filter)
       .populate("movie")
       .populate("hall")
       .sort({ startTime: 1 });
 
-    return showtimes.map((s) => ({
-      UUID: s.UUID,
-      startTime: s.startTime,
-      endTime: s.endTime,
-      status: s.status,
-      movie: {
-        UUID: s.movie.UUID,
-        title: s.movie.title,
-        duration: s.movie.duration,
-        posterUrl: s.movie.posterUrl,
-      },
-      hall: {
-        UUID: s.hall.UUID,
-        name: s.hall.name,
-      },
-    }));
+    return showtimes.map(mapShowtime);
   },
 
   async getShowtimesByMovieId(movieId) {
@@ -48,22 +66,7 @@ const showtimeService = {
       .populate("hall")
       .sort({ startTime: 1 });
 
-    return showtimes.map((s) => ({
-      UUID: s.UUID,
-      startTime: s.startTime,
-      endTime: s.endTime,
-      status: s.status,
-      movie: {
-        UUID: s.movie.UUID,
-        title: s.movie.title,
-        duration: s.movie.duration,
-        posterUrl: s.movie.posterUrl,
-      },
-      hall: {
-        UUID: s.hall.UUID,
-        name: s.hall.name,
-      },
-    }));
+    return showtimes.map(mapShowtime);
   },
 
   async getNearestShowtimes() {
@@ -78,22 +81,7 @@ const showtimeService = {
       .sort({ startTime: 1 })
       .limit(5);
 
-    return showtimes.map((s) => ({
-      UUID: s.UUID,
-      startTime: s.startTime,
-      endTime: s.endTime,
-      status: s.status,
-      movie: {
-        UUID: s.movie.UUID,
-        title: s.movie.title,
-        duration: s.movie.duration,
-        posterUrl: s.movie.posterUrl,
-      },
-      hall: {
-        UUID: s.hall.UUID,
-        name: s.hall.name,
-      },
-    }));
+    return showtimes.map(mapShowtime);
   },
 };
 

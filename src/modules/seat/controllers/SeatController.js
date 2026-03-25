@@ -92,31 +92,6 @@ class SeatController {
     }
   }
 
-  async staffConfirmBooking(req, res) {
-    const { checkoutToken } = req.body;
-
-    if (!checkoutToken) {
-      return ApiResponse.error(res, "checkoutToken is required", 400);
-    }
-
-    if (!req.user) {
-      return ApiResponse.error(res, "Unauthorized", 401);
-    }
-
-    try {
-      const result = await seatService.staffConfirmBooking(
-        checkoutToken,
-        req.user.id
-      );
-
-      return ApiResponse.success(res, result, "Booking confirmed");
-
-    } catch (error) {
-      return ApiResponse.error(res, error.message || "Error", 400);
-    }
-  }
-
-
   // 📋 GET SEATS BY SHOWTIME
   async getSeatsByShowtime(req, res) {
     try {

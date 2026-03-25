@@ -4,7 +4,7 @@ const ReviewService = require("../services/ReviewService");
 const reviewService = new ReviewService();
 
 class ReviewController {
-  // Public: danh sách review approved theo movie
+  // Public: List approved reviews for a movie
   async getByMovie(req, res) {
     try {
       const { movieUUID } = req.params;
@@ -17,7 +17,7 @@ class ReviewController {
     }
   }
 
-  // Customer: check đủ điều kiện review chưa
+  // Customer: Check if user is eligible to review
   async getEligibility(req, res) {
     if (!req.user) return ApiResponse.error(res, "Unauthorized", 401);
 
@@ -32,7 +32,7 @@ class ReviewController {
     }
   }
 
-  // Customer: tạo review
+  // Customer: Submit a new review
   async create(req, res) {
     if (!req.user) return ApiResponse.error(res, "Unauthorized", 401);
 
@@ -57,7 +57,7 @@ class ReviewController {
     }
   }
 
-  // Manager/Admin: danh sách review để duyệt
+  // Manager/Admin: List reviews for moderation
   async listForModeration(req, res) {
     if (!req.user) return ApiResponse.error(res, "Unauthorized", 401);
 
@@ -70,7 +70,7 @@ class ReviewController {
     }
   }
 
-  // Manager/Admin: duyệt hoặc ẩn review
+  // Manager/Admin: Approve or hide a review
   async moderate(req, res) {
     if (!req.user) return ApiResponse.error(res, "Unauthorized", 401);
 
@@ -93,7 +93,7 @@ class ReviewController {
     }
   }
 
-  // Manager/Admin: xóa review
+  // Manager/Admin: Delete a review
   async delete(req, res) {
     if (!req.user) return ApiResponse.error(res, "Unauthorized", 401);
 

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const PricingService = require("../services/PricingService");
-const Showtime = require("../modules/showtime/models/Showtime");
+const PricingService = require("../../../services/PricingService");
+const Showtime = require("../../showtime/models/Showtime");
 
 const pricingService = new PricingService();
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));

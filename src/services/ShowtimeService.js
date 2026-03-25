@@ -50,6 +50,7 @@ class ShowtimeService {
       hall: hall._id,
       startTime,
       endTime,
+      price: Number(data.price) || 0,
       status: ShowtimeStatus.ACTIVE,
     });
 
@@ -108,6 +109,7 @@ class ShowtimeService {
     }
 
     if (data.status) showtime.status = data.status;
+    if (data.price !== undefined) showtime.price = Number(data.price);
 
     return showtime.save();
   }

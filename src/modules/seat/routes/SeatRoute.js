@@ -9,7 +9,6 @@ const controller = new SeatController();
 router.post("/hold", authenticate, controller.holdSeats.bind(controller));
 router.post("/checkout/preview", authenticate, controller.checkoutPreview.bind(controller));
 router.post("/confirm", authenticate, controller.confirmBooking.bind(controller));
-router.post("/staffConfirm", authenticate, controller.staffConfirmBooking.bind(controller));
 router.get("/showtimes/showtimeUuid/:showtimeUUID/seats",controller.getSeatsByShowtime.bind(controller)
 );
 

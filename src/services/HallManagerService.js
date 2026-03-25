@@ -66,6 +66,7 @@ const hallManagerService = {
     );
 
     hall.capacity = created.length;
+    hall.seats = created.map(s => s._id); 
     await hall.save();
 
     return {
@@ -76,7 +77,15 @@ const hallManagerService = {
 
   async getSeatLayout(hallId) {
     const hall = await findHall(hallId);
-    const seats = await Seat.find({ hall: hall._id }).sort({ row: 1, col: 1 });
+    // Explicitly use Mongoose's ObjectId to avoid type mismatch, with fallback to UUID/string
+    const query = { 
+        $or: [
+            { hall: new mongoose.Types.ObjectId(String(hall._id)) },
+            { hall: String(hall._id) },
+            { hall: hall.UUID }
+        ]
+    };
+    const seats = await Seat.find(query).sort({ row: 1, col: 1 });
 
     const rowMap = seats.reduce((map, s) => {
       const r = s.row ?? 0;
@@ -88,6 +97,7 @@ const hallManagerService = {
     return {
       hall: { id: hall.UUID, name: hall.name, type: hall.type, capacity: hall.capacity },
       totalSeats: seats.length,
+      seats: seats.map(s => ({ UUID: s.UUID, seatNumber: s.seatNumber, row: s.row, col: s.col, type: s.type })),
       matrix: Object.entries(rowMap)
         .sort(([a], [b]) => Number(a) - Number(b))
         .map(([row, seats]) => ({ row: Number(row), seats })),

@@ -1,10 +1,9 @@
-const Router = require("express").Router;
-const showtimeController = require("../controllers/showtimeController"); // 🔹 KHÔNG destructuring
+const ShowtimeController = require("../controllers/ShowtimeController"); 
+const controller = new ShowtimeController();
+const router = require("express").Router();
 
-const router = Router();
-
-router.get("/", showtimeController.getAll);
-router.get("/movies/:movieId", showtimeController.getByMovieId);
-router.get("/nearest", showtimeController.getNearest);
+router.get("/", (req, res) => controller.getAll(req, res));
+router.get("/movies/:movieId", (req, res) => controller.getByMovieId(req, res));
+router.get("/nearest", (req, res) => controller.getNearest(req, res));
 
 module.exports = router;

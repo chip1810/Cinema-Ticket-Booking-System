@@ -8,6 +8,7 @@ const ShowtimeSchema = new Schema({
   endTime: { type: Date, required: true },
   hall: { type: Types.ObjectId, ref: "Hall", required: true },
   movie: { type: Types.ObjectId, ref: "Movie", required: true },
+  price: { type: Number, required: true, default: 0 },
   status: { type: String, enum: Object.values(ShowtimeStatus), default: ShowtimeStatus.ACTIVE }
 }, { timestamps: true });
 
